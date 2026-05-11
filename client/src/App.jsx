@@ -1,13 +1,26 @@
 import React from "react";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+import { HelmetProvider } from "react-helmet-async";
+import Layout from "./components/Layout";
 
 const App = () => {
+	const AuthenticatedApp = () => {
+		return (
+			<Routes>
+				<Route path="/" element={<Layout />}>
+					<Route index element={<Home />} />
+				</Route>
+			</Routes>
+		);
+	};
+
 	return (
-		<section className="app">
-			<div className="container mx-auto flex flex-col items-center justify-center h-screen">
-				<h1 className="text-2xl italic font-bold">Tassia Connect</h1>
-				<p>Comming soon... </p>
-			</div>
-		</section>
+		<HelmetProvider>
+			<Router>
+				<AuthenticatedApp />
+			</Router>
+		</HelmetProvider>
 	);
 };
 
