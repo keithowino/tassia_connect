@@ -6,30 +6,145 @@ const metadata = {
 	},
 };
 
-const dummyPosts = [
+const dummyCommunityPosts = [
 	{
 		id: 1,
+		author_id: 1,
 		type: "deal",
 		pinned: true,
-		title: "50% off the Jordans at sneaker world!",
+		title: "50% off the Jordans at Sneaker World!",
 		content:
-			"Step into the game with the iconic Jordans – Style #AJ23. Sleek design, unbeatable comfort, and that legendary streetwear edge. Special Price: Only for this week! Hurry – stock is flying off fast! Own the look. Own the legend. DM now to secure your pair before they’re gone!",
+			"Step into the game with the iconic Jordans – Style #AJ23. Sleek design, unbeatable comfort, and that legendary streetwear edge. Special price available only this week. Hurry before stock runs out!",
 		profiles: {
 			full_name: "Sneaker World",
 		},
-		created_at: "2024-06-01T10:00:00Z",
+		created_at: "2026-05-12T08:30:00",
 	},
+
 	{
 		id: 2,
+		author_id: 2,
+		type: "announcement",
+		pinned: false,
+		title: "New Barber Now Available at Royal Touch",
+		content:
+			"We are excited to welcome Kevin the Barber to our team. Book your fresh fade or beard trim appointment starting this Friday.",
+		profiles: {
+			full_name: "Royal Touch Barbershop",
+		},
+		created_at: "2026-05-11T10:15:00",
+	},
+
+	{
+		id: 3,
+		author_id: 3,
+		type: "news",
+		pinned: false,
+		title: "Nyeri Tech Meetup Happening This Saturday",
+		content:
+			"Developers, designers, and tech enthusiasts are invited for a networking and learning session at CodeCraft Academy this weekend.",
+		profiles: {
+			full_name: "CodeCraft Academy",
+		},
+		created_at: "2026-05-10T16:45:00",
+	},
+
+	{
+		id: 4,
+		author_id: 4,
+		type: "wanted",
+		pinned: false,
+		title: "Looking for a Graphic Designer",
+		content:
+			"We are searching for a freelance graphic designer to help create promotional posters and social media content for our salon.",
+		profiles: {
+			full_name: "Glow House Salon",
+		},
+		created_at: "2026-05-09T13:20:00",
+	},
+
+	{
+		id: 5,
+		author_id: 5,
 		type: "deal",
 		pinned: true,
-		title: "50% off the Jordans at sneaker world!",
+		title: "Buy 2 Shirts, Get 1 Free!",
 		content:
-			"Step into the game with the iconic Jordans – Style #AJ23. Sleek design, unbeatable comfort, and that legendary streetwear edge. Special Price: Only for this week! Hurry – stock is flying off fast! Own the look. Own the legend. DM now to secure your pair before they’re gone!",
+			"Visit Urban Wear this weekend and enjoy a free shirt when you buy any two official branded outfits.",
 		profiles: {
-			full_name: "Sneaker World",
+			full_name: "Urban Wear",
 		},
-		created_at: "2024-06-01T10:00:00Z",
+		created_at: "2026-05-08T09:00:00",
+	},
+
+	{
+		id: 6,
+		author_id: 6,
+		type: "general",
+		pinned: false,
+		title: "Best Coffee Spots Around Nyeri?",
+		content:
+			"I just moved here recently and I’m looking for recommendations for quiet coffee spots with good Wi-Fi and work-friendly environments.",
+		profiles: {
+			full_name: "Brian Mwangi",
+		},
+		created_at: "2026-05-07T18:10:00",
+	},
+
+	{
+		id: 7,
+		author_id: 7,
+		type: "announcement",
+		pinned: false,
+		title: "Laundry Pickup Services Expanded",
+		content:
+			"Sparkle Laundry now offers free pickup and delivery services within Nyeri town for orders above KES 1000.",
+		profiles: {
+			full_name: "Sparkle Laundry",
+		},
+		created_at: "2026-05-06T11:40:00",
+	},
+
+	{
+		id: 8,
+		author_id: 8,
+		type: "wanted",
+		pinned: false,
+		title: "Searching for a Part-Time Cashier",
+		content:
+			"Green Basket Market is hiring a reliable part-time cashier with good customer service and basic computer skills.",
+		profiles: {
+			full_name: "Green Basket Market",
+		},
+		created_at: "2026-05-05T15:30:00",
+	},
+
+	{
+		id: 9,
+		author_id: 9,
+		type: "news",
+		pinned: false,
+		title: "Heavy Discounts on Electronics This Month",
+		content:
+			"Pickaxe & Shovel has announced major discounts on phone accessories, laptop repairs, and gaming equipment throughout May.",
+		profiles: {
+			full_name: "Pickaxe & Shovel",
+		},
+		created_at: "2026-05-04T14:00:00",
+	},
+
+	{
+		id: 10,
+		author_id: 10,
+		type: "general",
+		pinned: false,
+		title: "Anyone Know a Good Math Tutor?",
+		content:
+			"I’m looking for a reliable mathematics tutor for high school level classes around Nyeri town. Recommendations are welcome.",
+		profiles: {
+			full_name: "Faith Wanjiku",
+		},
+		created_at: "2026-05-03T17:25:00",
 	},
 ];
 
@@ -125,6 +240,8 @@ const dummyBusinesses = [
 		id: 1,
 		slug: "pickaxe-and-shovel",
 		name: "Pickaxe & Shovel",
+		description:
+			"Reliable electronics repair shop offering phone fixing, laptop maintenance, accessories, and technical support services.",
 		featured: true,
 		categories: {
 			name: "Electronics & Repair",
@@ -146,6 +263,8 @@ const dummyBusinesses = [
 		id: 2,
 		slug: "preemie-tech",
 		name: "Preemie",
+		description:
+			"Affordable gadget repair and electronics store specializing in smartphones, laptops, chargers, and accessories.",
 		featured: true,
 		categories: {
 			name: "Electronics & Repair",
@@ -167,6 +286,8 @@ const dummyBusinesses = [
 		id: 3,
 		slug: "glow-house-salon",
 		name: "Glow House Salon",
+		description:
+			"Professional beauty salon providing hairstyling, makeup, nail care, skincare, and premium grooming services.",
 		featured: true,
 		categories: {
 			name: "Salon & Beauty",
@@ -188,6 +309,8 @@ const dummyBusinesses = [
 		id: 4,
 		slug: "royal-touch-barbershop",
 		name: "Royal Touch Barbershop",
+		description:
+			"Modern barbershop offering stylish haircuts, beard grooming, fades, and personalized men's grooming services.",
 		featured: false,
 		categories: {
 			name: "Salon & Beauty",
@@ -209,6 +332,8 @@ const dummyBusinesses = [
 		id: 5,
 		slug: "green-basket-market",
 		name: "Green Basket Market",
+		description:
+			"Neighborhood grocery store supplying fresh vegetables, fruits, beverages, snacks, and daily household essentials.",
 		featured: true,
 		categories: {
 			name: "Grocery & Supermarket",
@@ -230,6 +355,8 @@ const dummyBusinesses = [
 		id: 6,
 		slug: "family-choice-supermarket",
 		name: "Family Choice Supermarket",
+		description:
+			"Convenient supermarket with affordable groceries, cleaning products, fresh produce, and packaged food items.",
 		featured: false,
 		categories: {
 			name: "Grocery & Supermarket",
@@ -251,6 +378,8 @@ const dummyBusinesses = [
 		id: 7,
 		slug: "sparkle-laundry",
 		name: "Sparkle Laundry",
+		description:
+			"Fast and dependable laundry service handling washing, drying, ironing, folding, and dry-cleaning solutions.",
 		featured: true,
 		categories: {
 			name: "Laundry Services",
@@ -272,6 +401,8 @@ const dummyBusinesses = [
 		id: 8,
 		slug: "quickwash-laundry",
 		name: "QuickWash Laundry",
+		description:
+			"Affordable laundry and dry-cleaning business offering same-day washing, ironing, and fabric care services.",
 		featured: false,
 		categories: {
 			name: "Laundry Services",
@@ -293,6 +424,8 @@ const dummyBusinesses = [
 		id: 9,
 		slug: "codecraft-academy",
 		name: "CodeCraft Academy",
+		description:
+			"Technology training center teaching programming, web development, digital literacy, and practical software skills.",
 		featured: true,
 		categories: {
 			name: "Education & Training",
@@ -314,6 +447,8 @@ const dummyBusinesses = [
 		id: 10,
 		slug: "future-stars-tuition",
 		name: "Future Stars Tuition Centre",
+		description:
+			"Education center focused on tutoring, exam preparation, mentorship, and academic improvement for students.",
 		featured: false,
 		categories: {
 			name: "Education & Training",
@@ -334,6 +469,7 @@ const dummyBusinesses = [
 ];
 
 const dummyUserProfile = {
+	id: 1,
 	avatar_url: "https://www.loremfaces.net/128/id/1.jpg",
 	full_name: "Thompson Thompson",
 	role: "user",
@@ -344,11 +480,23 @@ const dummyFavorites = [
 	{ user_id: 1, business_id: 5 },
 ];
 
+const TYPE_OPTIONS = ["general", "deal", "announcement", "news", "wanted"];
+
+const TYPE_OPTION_COLORS = {
+	deal: "bg-green-100 text-green-700",
+	announcement: "bg-blue-100 text-blue-700",
+	news: "bg-orange-100 text-orange-700",
+	wanted: "bg-red-100 text-red-700",
+	general: "bg-gray-100 text-gray-600",
+};
+
 export default {
 	metadata,
-	dummyPosts,
 	dummyCategories,
 	dummyBusinesses,
 	dummyUserProfile,
 	dummyFavorites,
+	dummyCommunityPosts,
+	TYPE_OPTIONS,
+	TYPE_OPTION_COLORS,
 };

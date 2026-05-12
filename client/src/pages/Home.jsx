@@ -224,7 +224,7 @@ const Home = () => {
 		// dummy fetch action
 		try {
 			setLoading(true);
-			setPosts([...data.dummyPosts]);
+			setPosts([...data.dummyCommunityPosts]);
 			setCategories([...data.dummyCategories]);
 			setBusinesses([...data.dummyBusinesses]);
 		} catch (error) {
@@ -246,14 +246,6 @@ const Home = () => {
 	useEffect(() => {
 		fetchData();
 	}, []);
-
-	const POST_TYPE_COLORS = {
-		deal: "bg-green-100 text-green-700",
-		announcement: "bg-blue-100 text-blue-700",
-		news: "bg-orange-100 text-orange-700",
-		wanted: "bg-red-100 text-red-700",
-		general: "bg-gray-100 text-gray-600",
-	};
 
 	return (
 		<>
@@ -315,7 +307,9 @@ const Home = () => {
 									/>
 								),
 								label: "Businesses",
-								value: "50+",
+								value: businesses
+									? businesses.length + "+"
+									: "50+",
 							},
 							{
 								icon: (
@@ -325,7 +319,7 @@ const Home = () => {
 									/>
 								),
 								label: "Reviews",
-								value: "200+",
+								value: posts ? posts.length + "+" : "No posts",
 							},
 							{
 								icon: (
@@ -446,7 +440,7 @@ const Home = () => {
 											<div className="flex-1 min-w-0">
 												<div className="flex items-center gap-2 mb-1">
 													<span
-														className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${POST_TYPE_COLORS[post.type]}`}
+														className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${data.TYPE_OPTION_COLORS[post.type]}`}
 													>
 														{post.type}
 													</span>
