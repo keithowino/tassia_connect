@@ -212,22 +212,35 @@ import CategoryFilter from "../components/business/CategoryFilter";
 import BusinessCard from "../components/business/BusinessCard";
 
 const Home = () => {
-	const [loading, setLoading] = useState(false); // set to true
+	const [loading, setLoading] = useState(true);
 	const [businesses, setBusinesses] = useState([]);
 	const [posts, setPosts] = useState([]);
 	const [categories, setCategories] = useState([]);
+	const [search, setSearch] = useState("");
 
 	const navigate = useNavigate();
 
 	const fetchData = async () => {
 		// dummy fetch action
 		try {
+			setLoading(true);
 			setPosts([...data.dummyPosts]);
 			setCategories([...data.dummyCategories]);
 			setBusinesses([...data.dummyBusinesses]);
 		} catch (error) {
 			console.error(error);
+		} finally {
+			setLoading(false);
 		}
+	};
+
+	const handleSearch = (e) => {
+		e.preventDefault();
+
+		const searchItem = search.trim();
+
+		if (searchItem)
+			navigate(`/discover?q=${encodeURIComponent(searchItem)}`);
 	};
 
 	useEffect(() => {
@@ -246,7 +259,7 @@ const Home = () => {
 		<>
 			<MetaDataInsert title={data.metadata.name} />
 			<div className="max-w-5xl mx-auto">
-				{/* Hero */}
+				{/* Hero - covered*/}
 				<section className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-4 pt-8 pb-16">
 					<div className="absolute inset-0 opacity-10">
 						<div className="absolute top-4 right-4 w-32 h-32 bg-white rounded-full" />
@@ -267,7 +280,7 @@ const Home = () => {
 							services, and connect with your neighbors.
 						</p>
 						<form
-							// onSubmit={handleSearch}
+							onSubmit={handleSearch}
 							className="relative max-w-md mx-auto"
 						>
 							<Search
@@ -275,7 +288,7 @@ const Home = () => {
 								className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
 							/>
 							<input
-								// value={search}
+								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder="Search restaurants, salons, hardware..."
 								className="w-full bg-white rounded-2xl pl-11 pr-28 py-3.5 text-sm text-gray-900 placeholder-gray-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -290,7 +303,7 @@ const Home = () => {
 					</div>
 				</section>
 
-				{/* Stats Banner */}
+				{/* Stats Banner - covered for now */}
 				<div className="bg-white border-b border-gray-100 px-4 py-3">
 					<div className="max-w-xl mx-auto flex items-center justify-around gap-6">
 						{[

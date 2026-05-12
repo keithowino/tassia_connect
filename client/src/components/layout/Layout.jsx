@@ -1,16 +1,18 @@
-import React from "react";
 import { Outlet } from "react-router-dom";
-import data from "../lib/data";
+import data from "../../lib/data";
+import Header from "./Header";
+import BottomNav from "./BottomNav";
+import CartDrawer from "../orders/CartDrawer";
 
 const Layout = () => {
 	return (
 		<div className="min-h-screen bg-gray-50">
-			{/* header */}
+			<Header />
 			<main className="pb-20 md:pb-8">
 				<Outlet />
 			</main>
-			{/* bottomnav */}
-			{/* cartdrawer */}
+			<BottomNav />
+			{/* <CartDrawer /> */}
 		</div>
 	);
 };

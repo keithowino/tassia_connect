@@ -163,9 +163,16 @@ const dummyBusinesses = [
 	},
 ];
 
+const dummyUserProfile = {
+	avatar_url: "https://www.loremfaces.net/128/id/1.jpg",
+	full_name: "Thompson Thompson",
+	role: "user",
+};
+
 export default {
 	metadata,
 	dummyPosts,
 	dummyCategories,
 	dummyBusinesses,
+	dummyUserProfile,
 };
