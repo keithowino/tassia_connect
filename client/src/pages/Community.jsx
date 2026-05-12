@@ -223,7 +223,7 @@ const Community = () => {
 	const [loading, setLoading] = useState(true);
 
 	const user = data.dummyUserProfile; // dummy variable
-	const count = 11; // dummy variable
+	let count = 11; // dummy variable
 
 	const fetchPosts = async () => {
 		try {
