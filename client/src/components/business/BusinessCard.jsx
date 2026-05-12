@@ -118,7 +118,7 @@ export default function BusinessCard({ business, isFavorited, onToggleFavorite }
 |--------------------------------------------------
 */
 
-import { Clock, MapPin, Star } from "lucide-react";
+import { Clock, Heart, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const FALLBACK_IMAGES = {
@@ -155,8 +155,7 @@ const isOpen = (opening, closing, openDays) => {
 	return nowMins >= oh * 60 + om && nowMins < ch * 60 + cm;
 };
 
-// const BusinessCard = ({ business, isFavorited, onToggleFavorite }) => {
-const BusinessCard = ({ business }) => {
+const BusinessCard = ({ business, isFavorited, onToggleFavorite }) => {
 	const slug = business.categories?.slug;
 	const image =
 		business.cover_image ||
@@ -189,7 +188,7 @@ const BusinessCard = ({ business }) => {
 					>
 						{open ? "Open" : "Closed"}
 					</span>
-					{/* {onToggleFavorite && (
+					{onToggleFavorite && (
 						<button
 							onClick={(e) => {
 								e.preventDefault();
@@ -206,7 +205,7 @@ const BusinessCard = ({ business }) => {
 								}
 							/>
 						</button>
-					)} */}
+					)}
 					{business.categories && (
 						<span
 							className="absolute bottom-2 left-2 text-white text-xs font-medium px-2 py-0.5 rounded-full"
