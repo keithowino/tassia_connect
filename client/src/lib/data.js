@@ -160,7 +160,7 @@ const dummyCategories = [
 		id: 2,
 		slug: "salon-beauty",
 		color: "pink",
-		name: "Saloon & Beauty",
+		name: "Salon & Beauty",
 		icon: "Scissors",
 	},
 	{
