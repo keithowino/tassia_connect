@@ -219,6 +219,7 @@ const Home = () => {
 	const [search, setSearch] = useState("");
 
 	const navigate = useNavigate();
+	const pinned = posts.filter((f) => f.pinned === true);
 
 	const fetchData = async () => {
 		// dummy fetch action
@@ -431,7 +432,8 @@ const Home = () => {
 							</div>
 
 							<div className="space-y-3">
-								{posts.map((post) => (
+								{/* it was posts.map() */}
+								{pinned.map((post) => (
 									<div
 										key={post.id}
 										className="bg-white rounded-2xl border border-gray-100 p-4"
