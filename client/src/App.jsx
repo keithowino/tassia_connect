@@ -97,6 +97,7 @@ import { useEffect, useState } from "react";
 import data from "./lib/data";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import BusinessDashboardPage from "./pages/BusinessDashboardPage";
+import { DataProvider } from "./lib/context/DataContext";
 
 function DashboardRedirect() {
 	// const { user, loading } = useAuth();
@@ -166,11 +167,13 @@ const App = () => {
 	};
 
 	return (
-		<HelmetProvider>
-			<Router>
-				<AuthenticatedApp />
-			</Router>
-		</HelmetProvider>
+		<DataProvider>
+			<HelmetProvider>
+				<Router>
+					<AuthenticatedApp />
+				</Router>
+			</HelmetProvider>
+		</DataProvider>
 	);
 };
 

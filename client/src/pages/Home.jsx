@@ -210,8 +210,11 @@ import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import CategoryFilter from "../components/business/CategoryFilter";
 import BusinessCard from "../components/business/BusinessCard";
+import { useData } from "../lib/context/DataContext";
 
 const Home = () => {
+	const { limit } = useData();
+
 	const [loading, setLoading] = useState(true);
 	const [businesses, setBusinesses] = useState([]);
 	const [posts, setPosts] = useState([]);
@@ -225,9 +228,24 @@ const Home = () => {
 		// dummy fetch action
 		try {
 			setLoading(true);
-			setPosts([...data.dummyCommunityPosts]);
+
+			const pinnedPosts = data.dummyCommunityPosts.filter(
+				(f) => f.pinned,
+			);
+
+			const randPosts = [...pinnedPosts]
+				.sort(() => Math.random() - 0.5)
+				.slice(0, limit);
+
+			const featuredBiz = data.dummyBusinesses.filter((f) => f.featured);
+
+			const randBiz = [...featuredBiz]
+				.sort(() => Math.random() - 0.5)
+				.slice(0, limit);
+
 			setCategories([...data.dummyCategories]);
-			setBusinesses([...data.dummyBusinesses]);
+			setPosts(randPosts);
+			setBusinesses(randBiz);
 		} catch (error) {
 			console.error(error);
 		} finally {
@@ -432,8 +450,7 @@ const Home = () => {
 							</div>
 
 							<div className="space-y-3">
-								{/* it was posts.map() */}
-								{pinned.map((post) => (
+								{posts.map((post) => (
 									<div
 										key={post.id}
 										className="bg-white rounded-2xl border border-gray-100 p-4"
