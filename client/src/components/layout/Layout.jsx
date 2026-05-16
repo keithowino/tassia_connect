@@ -12,7 +12,7 @@ const Layout = () => {
 				<Outlet />
 			</main>
 			<BottomNav />
-			{/* <CartDrawer /> */}
+			<CartDrawer />
 		</div>
 	);
 };
