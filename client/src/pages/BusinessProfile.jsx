@@ -359,7 +359,7 @@ import { useData } from "../lib/context/DataContext";
 
 const BusinessProfile = () => {
 	const { slug } = useParams();
-	const { dummyBusinesses } = useData();
+	const { user, dummyBusinesses, dummyReviews } = useData();
 
 	const [business, setBusiness] = useState(null); // (useState < Business) | (null > null)
 	const [isFavorited, setIsFavorited] = useState(false);
@@ -369,8 +369,6 @@ const BusinessProfile = () => {
 	const [reviewForm, setReviewForm] = useState({ rating: 0, comment: "" });
 	const [reviews, setReviews] = useState([]);
 	const [submittingReview, setSubmittingReview] = useState(false);
-
-	const user = data.dummyUserProfile; // dummy variable
 
 	const coverImage =
 		business?.cover_image ||
@@ -410,7 +408,7 @@ const BusinessProfile = () => {
 				);
 				setBusiness(filterBySlug);
 				setProducts(data.dummyProductsServices);
-				setReviews(data.dummyReviews);
+				setReviews(dummyReviews);
 			} catch (error) {
 				console.error(error);
 			} finally {

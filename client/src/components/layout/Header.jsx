@@ -123,16 +123,18 @@ export default function Header() {
 */
 
 import { ChevronDown, MapPin, Menu, ShoppingCart, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import data from "../../lib/data";
 import { useState } from "react";
+import { useData } from "../../lib/context/DataContext";
 
 const Header = () => {
+	const { user, profile } = useData();
+
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
 
-	const user = "Dummy User";
-	const profile = data.dummyUserProfile; // dummy profile
+	const navigate = useNavigate();
 
 	const handleSignOut = async () => {
 		// await signOut();

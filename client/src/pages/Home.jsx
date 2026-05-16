@@ -213,7 +213,7 @@ import BusinessCard from "../components/business/BusinessCard";
 import { useData } from "../lib/context/DataContext";
 
 const Home = () => {
-	const { limit, dummyBusinesses } = useData();
+	const { limit, dummyBusinesses, dummyCommunityPosts } = useData();
 
 	const [loading, setLoading] = useState(true);
 	const [businesses, setBusinesses] = useState([]);
@@ -229,9 +229,7 @@ const Home = () => {
 		try {
 			setLoading(true);
 
-			const pinnedPosts = data.dummyCommunityPosts.filter(
-				(f) => f.pinned,
-			);
+			const pinnedPosts = dummyCommunityPosts.filter((f) => f.pinned);
 
 			const randPosts = [...pinnedPosts]
 				.sort(() => Math.random() - 0.5)

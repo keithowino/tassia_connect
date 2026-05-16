@@ -209,8 +209,11 @@ import MetaDataInsert from "../lib/MetaDataInsert";
 import { useEffect, useState } from "react";
 import data from "../lib/data";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useData } from "../lib/context/DataContext";
 
 const Community = () => {
+	const { user, dummyCommunityPosts } = useData();
+
 	const [showForm, setShowForm] = useState(false);
 	const [form, setForm] = useState({
 		title: "",
@@ -222,7 +225,6 @@ const Community = () => {
 	const [selectedType, setSelectedType] = useState(null); // (useState < string) | (null > null)
 	const [loading, setLoading] = useState(true);
 
-	const user = data.dummyUserProfile; // dummy variable
 	let count = 11; // dummy variable
 
 	const fetchPosts = async () => {
@@ -236,12 +238,12 @@ const Community = () => {
 			// // const { data } = await query;
 			// // if (data) setPosts(data as CommunityPost[]);
 			if (selectedType) {
-				const filteredPosts = data.dummyCommunityPosts.filter(
+				const filteredPosts = dummyCommunityPosts.filter(
 					(f) => f.type === selectedType,
 				);
 				setPosts(filteredPosts);
 			} else {
-				setPosts(data.dummyCommunityPosts);
+				setPosts(dummyCommunityPosts);
 			}
 		} catch (error) {
 			console.error(error);

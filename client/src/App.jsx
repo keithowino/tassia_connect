@@ -97,13 +97,14 @@ import { useEffect, useState } from "react";
 import data from "./lib/data";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import BusinessDashboardPage from "./pages/BusinessDashboardPage";
-import { DataProvider } from "./lib/context/DataContext";
+import { DataProvider, useData } from "./lib/context/DataContext";
 
 function DashboardRedirect() {
 	// const { user, loading } = useAuth();
+	const { user } = useData();
+
 	const [redirect, setRedirect] = useState(null); // (useState < string) | (null > null)
 
-	const user = data.dummyUserProfile; // dummy variable
 	const loading = false; // dummy variable
 
 	useEffect(() => {
@@ -122,11 +123,7 @@ function DashboardRedirect() {
 		// 		.then(({ data }) => {
 		// 			setRedirect(data ? `/dashboard/${data.id}` : "/dashboard/new");
 		// 		});
-		setRedirect(
-			data.dummyUserProfile
-				? `/dashboard/${data.dummyUserProfile.id}`
-				: "/dashboard/new",
-		); // dummy set action
+		setRedirect(user ? `/dashboard/${user.id}` : "/dashboard/new"); // dummy set action
 	}, [user, loading]);
 
 	if (!redirect) {

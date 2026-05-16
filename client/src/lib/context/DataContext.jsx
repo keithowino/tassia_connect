@@ -1,10 +1,25 @@
 import { createContext, useContext, useState } from "react";
-import { CheckCircle, Clock, Package, XCircle } from "lucide-react";
+import {
+	CheckCircle,
+	Clock,
+	MessageSquare,
+	Package,
+	Star,
+	Store,
+	Users,
+	XCircle,
+} from "lucide-react";
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
 	const [limit, setLimit] = useState(3);
+	const [stats, setStats] = useState({
+		businesses: 0,
+		users: 0,
+		orders: 0,
+		reviews: 0,
+	});
 
 	const STATUS_CONFIG = {
 		pending: {
@@ -136,18 +151,18 @@ export const DataProvider = ({ children }) => {
 		id: 101,
 		avatar_url:
 			"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop",
-		full_name: "Thompson Mwangi",
-		role: "user",
-		email: "thompson.mwangi@gmail.com",
+		full_name: "Luke Cage",
+		role: "admin", // business_owner, admin, user
+		email: "grace.wanjiru@gmail.com",
 	};
 
 	// dummy variable
 	const profile = {
 		avatar_url:
-			"https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400&auto=format&fit=crop",
-		full_name: "Grace Wanjiru",
+			"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop",
+		full_name: "Luke Cage",
 		phone: "+254712345678",
-		role: "business_owner",
+		role: "admin", // business_owner, admin, user
 	};
 
 	// dummy variable
@@ -161,7 +176,7 @@ export const DataProvider = ({ children }) => {
 			featured: true,
 			view_count: 1240,
 			floor_unit: "1st Floor, Shop B12",
-			address: "Kimathi Street, Nyeri Town, Nyeri County",
+			address: "Tassia Complex, Embakasi East",
 			phone: "+254768290857",
 			whatsapp: "+254768290857",
 			email: "designsolutions1629@gmail.com",
@@ -189,9 +204,12 @@ export const DataProvider = ({ children }) => {
 			latitude: -0.4194,
 			longitude: 36.9517,
 			verified: true,
-			status: "active",
+			status: "approved",
 			created_at: "2023-01-15T08:30:00Z",
 			updated_at: "2024-05-20T14:22:00Z",
+			profiles: {
+				full_name: "Keith Owino",
+			},
 		},
 		{
 			id: 2,
@@ -233,6 +251,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-03-20T10:15:00Z",
 			updated_at: "2024-06-10T09:45:00Z",
+			profiles: {
+				full_name: "Peter Mwangi",
+			},
 		},
 		{
 			id: 3,
@@ -274,6 +295,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-11-10T12:00:00Z",
 			updated_at: "2024-07-01T11:30:00Z",
+			profiles: {
+				full_name: "Mary Wanjiku",
+			},
 		},
 		{
 			id: 4,
@@ -315,6 +339,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-05-05T09:00:00Z",
 			updated_at: "2024-06-15T16:20:00Z",
+			profiles: {
+				full_name: "John Nderitu",
+			},
 		},
 		{
 			id: 5,
@@ -347,7 +374,7 @@ export const DataProvider = ({ children }) => {
 			closing_time: "22:00",
 			open_days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 			delivery_available: true,
-			owner_id: 101,
+			owner_id: 105,
 			avatar_url:
 				"https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop",
 			latitude: -0.4165,
@@ -356,6 +383,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-08-20T07:30:00Z",
 			updated_at: "2024-07-10T10:00:00Z",
+			profiles: {
+				full_name: "Grace Nduta",
+			},
 		},
 		{
 			id: 6,
@@ -397,6 +427,9 @@ export const DataProvider = ({ children }) => {
 			status: "pending",
 			created_at: "2023-09-12T11:00:00Z",
 			updated_at: "2024-05-25T14:15:00Z",
+			profiles: {
+				full_name: "David Maina",
+			},
 		},
 		{
 			id: 7,
@@ -438,6 +471,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-02-14T08:00:00Z",
 			updated_at: "2024-07-05T13:45:00Z",
+			profiles: {
+				full_name: "Lucy Wambui",
+			},
 		},
 		{
 			id: 8,
@@ -479,6 +515,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-07-18T09:30:00Z",
 			updated_at: "2024-06-20T12:00:00Z",
+			profiles: {
+				full_name: "Joseph Gichuki",
+			},
 		},
 		{
 			id: 9,
@@ -511,7 +550,7 @@ export const DataProvider = ({ children }) => {
 			closing_time: "17:00",
 			open_days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
 			delivery_available: false,
-			owner_id: 101,
+			owner_id: 109,
 			avatar_url:
 				"https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop",
 			latitude: -0.4208,
@@ -520,6 +559,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-10-01T10:00:00Z",
 			updated_at: "2024-07-08T15:30:00Z",
+			profiles: {
+				full_name: "Sarah Wairimu",
+			},
 		},
 		{
 			id: 10,
@@ -561,6 +603,9 @@ export const DataProvider = ({ children }) => {
 			status: "pending",
 			created_at: "2023-11-22T13:00:00Z",
 			updated_at: "2024-05-30T11:20:00Z",
+			profiles: {
+				full_name: "Michael Ngugi",
+			},
 		},
 		{
 			id: 11,
@@ -602,6 +647,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-04-03T14:00:00Z",
 			updated_at: "2024-07-12T18:30:00Z",
+			profiles: {
+				full_name: "Esther Nyokabi",
+			},
 		},
 		{
 			id: 12,
@@ -643,6 +691,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-08-07T10:30:00Z",
 			updated_at: "2024-06-28T09:15:00Z",
+			profiles: {
+				full_name: "Samuel Mbugua",
+			},
 		},
 		{
 			id: 13,
@@ -684,6 +735,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-12-12T11:00:00Z",
 			updated_at: "2024-07-14T20:00:00Z",
+			profiles: {
+				full_name: "Patrick Kamau",
+			},
 		},
 		{
 			id: 14,
@@ -725,6 +779,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-09-05T08:00:00Z",
 			updated_at: "2024-06-05T13:00:00Z",
+			profiles: {
+				full_name: "Francis Mwangi",
+			},
 		},
 		{
 			id: 15,
@@ -766,6 +823,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-06-19T09:00:00Z",
 			updated_at: "2024-06-25T14:45:00Z",
+			profiles: {
+				full_name: "Alice Wanjiru",
+			},
 		},
 		{
 			id: 16,
@@ -807,6 +867,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-01-25T10:00:00Z",
 			updated_at: "2024-07-03T11:30:00Z",
+			profiles: {
+				full_name: "Bernard Kinyua",
+			},
 		},
 		{
 			id: 17,
@@ -848,6 +911,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-10-30T08:30:00Z",
 			updated_at: "2024-07-07T16:00:00Z",
+			profiles: {
+				full_name: "Catherine Muthoni",
+			},
 		},
 		{
 			id: 18,
@@ -889,6 +955,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-03-15T12:00:00Z",
 			updated_at: "2024-07-13T21:00:00Z",
+			profiles: {
+				full_name: "Jane Wanjiku",
+			},
 		},
 		{
 			id: 19,
@@ -930,6 +999,9 @@ export const DataProvider = ({ children }) => {
 			status: "suspended",
 			created_at: "2023-09-25T14:00:00Z",
 			updated_at: "2024-06-18T10:00:00Z",
+			profiles: {
+				full_name: "Peter Chege",
+			},
 		},
 		{
 			id: 20,
@@ -971,6 +1043,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-05-20T05:30:00Z",
 			updated_at: "2024-07-02T08:45:00Z",
+			profiles: {
+				full_name: "Ruth Nyambura",
+			},
 		},
 		{
 			id: 21,
@@ -1012,6 +1087,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-02-28T15:00:00Z",
 			updated_at: "2024-07-11T23:00:00Z",
+			profiles: {
+				full_name: "Stephen Mwangi",
+			},
 		},
 		{
 			id: 22,
@@ -1053,6 +1131,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-07-07T11:00:00Z",
 			updated_at: "2024-07-04T19:30:00Z",
+			profiles: {
+				full_name: "Margaret Wanjiku",
+			},
 		},
 		{
 			id: 23,
@@ -1094,6 +1175,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-08-14T10:00:00Z",
 			updated_at: "2024-07-09T15:00:00Z",
+			profiles: {
+				full_name: "Brian Odhiambo",
+			},
 		},
 		{
 			id: 24,
@@ -1135,6 +1219,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2023-11-01T09:00:00Z",
 			updated_at: "2024-06-22T14:30:00Z",
+			profiles: {
+				full_name: "Charles Ndegwa",
+			},
 		},
 		{
 			id: 25,
@@ -1176,6 +1263,9 @@ export const DataProvider = ({ children }) => {
 			status: "active",
 			created_at: "2022-06-15T07:00:00Z",
 			updated_at: "2024-07-15T08:00:00Z",
+			profiles: {
+				full_name: "Dr. Elizabeth Wanjiru",
+			},
 		},
 	];
 
@@ -1255,15 +1345,360 @@ export const DataProvider = ({ children }) => {
 		},
 	];
 
+	// dummy variable
+	const STAT_ITEMS = [
+		{
+			icon: <Store size={20} className="text-orange-500" />,
+			label: "Active Businesses",
+			value: stats.businesses,
+		},
+		{
+			icon: <Users size={20} className="text-blue-500" />,
+			label: "Total Users",
+			value: stats.users,
+		},
+		{
+			icon: <Star size={20} className="text-amber-500" />,
+			label: "Total Reviews",
+			value: stats.reviews,
+		},
+		{
+			icon: <MessageSquare size={20} className="text-green-500" />,
+			label: "Total Orders",
+			value: stats.orders,
+		},
+	];
+
+	// dummy variable
+	const dummyReviews = [
+		{
+			id: 1,
+			business_id: 1,
+			user_id: 1,
+			rating: 5,
+			comment:
+				"Excellent repair service. My phone screen was replaced within a few hours and works perfectly.",
+			profiles: {
+				full_name: "Brian Mwangi",
+			},
+			created_at: "2026-05-10T09:30:00",
+			owner_reply:
+				"Thank you Brian! We’re glad you loved the service and appreciate your support.",
+			businesses: {
+				name: "Pickaxe & Shovel",
+			},
+		},
+		{
+			id: 2,
+			business_id: 2,
+			user_id: 2,
+			rating: 4,
+			comment:
+				"Affordable accessories and friendly staff. Delivery took slightly longer than expected.",
+			profiles: {
+				full_name: "Mercy Wanjiku",
+			},
+			created_at: "2026-05-09T14:10:00",
+			owner_reply:
+				"Thanks Mercy. We’re working on improving our delivery times.",
+			businesses: {
+				name: "Preemie",
+			},
+		},
+		{
+			id: 3,
+			business_id: 3,
+			user_id: 3,
+			rating: 5,
+			comment:
+				"The hairstyling service was amazing. Professional staff and a very clean environment.",
+			profiles: {
+				full_name: "Sharon Njeri",
+			},
+			created_at: "2026-05-08T11:45:00",
+			owner_reply:
+				"Thank you Sharon! We look forward to seeing you again soon.",
+			businesses: {
+				name: "Glow House Salon",
+			},
+		},
+		{
+			id: 4,
+			business_id: 4,
+			user_id: 4,
+			rating: 4,
+			comment:
+				"Great fade and beard trim. The barbers are talented and welcoming.",
+			profiles: {
+				full_name: "Kevin Kariuki",
+			},
+			created_at: "2026-05-07T16:20:00",
+			owner_reply:
+				"Appreciate the review Kevin. Thank you for choosing us.",
+			businesses: {
+				name: "Royal Touch Barbershop",
+			},
+		},
+		{
+			id: 5,
+			business_id: 5,
+			user_id: 5,
+			rating: 5,
+			comment:
+				"Fresh vegetables and fair prices. Their home delivery service is very convenient.",
+			profiles: {
+				full_name: "Alice Wambui",
+			},
+			created_at: "2026-05-06T08:15:00",
+			owner_reply:
+				"Thank you Alice! We’re happy to keep serving you fresh produce.",
+			businesses: {
+				name: "Green Basket Market",
+			},
+		},
+		{
+			id: 6,
+			business_id: 6,
+			user_id: 6,
+			rating: 3,
+			comment:
+				"Good selection of groceries but the checkout queue was quite long.",
+			profiles: {
+				full_name: "Peter Njuguna",
+			},
+			created_at: "2026-05-05T18:00:00",
+			owner_reply:
+				"Thanks for the feedback Peter. We’ll work on improving customer flow.",
+			businesses: {
+				name: "Family Choice Supermarket",
+			},
+		},
+		{
+			id: 7,
+			business_id: 7,
+			user_id: 7,
+			rating: 5,
+			comment:
+				"My clothes came back spotless and neatly folded. Highly recommend their service.",
+			profiles: {
+				full_name: "Faith Nyambura",
+			},
+			created_at: "2026-05-04T13:40:00",
+			owner_reply:
+				"Thank you Faith! Clean and reliable service is our priority.",
+			businesses: {
+				name: "Sparkle Laundry",
+			},
+		},
+		{
+			id: 8,
+			business_id: 8,
+			user_id: 8,
+			rating: 4,
+			comment:
+				"Affordable prices and same-day laundry service as promised.",
+			profiles: {
+				full_name: "Daniel Maina",
+			},
+			created_at: "2026-05-03T10:25:00",
+			owner_reply:
+				"Thanks Daniel! We appreciate your support and review.",
+			businesses: {
+				name: "QuickWash Laundry",
+			},
+		},
+		{
+			id: 9,
+			business_id: 9,
+			user_id: 9,
+			rating: 5,
+			comment:
+				"The programming classes are practical and beginner-friendly. I’ve learned a lot already.",
+			profiles: {
+				full_name: "Christine Wangui",
+			},
+			created_at: "2026-05-02T15:50:00",
+			owner_reply:
+				"We’re glad you’re enjoying the classes Christine. Keep learning!",
+			businesses: {
+				name: "CodeCraft Academy",
+			},
+		},
+		{
+			id: 10,
+			business_id: 10,
+			user_id: 10,
+			rating: 4,
+			comment:
+				"Very supportive tutors and well-organized revision classes for students.",
+			profiles: {
+				full_name: "Samuel Kimani",
+			},
+			created_at: "2026-05-01T12:00:00",
+			owner_reply:
+				"Thank you Samuel. We’re committed to helping students succeed.",
+			businesses: {
+				name: "Future Stars Tuition Centre",
+			},
+		},
+	];
+
+	// dummy variable
+	const dummyCommunityPosts = [
+		{
+			id: 1,
+			author_id: 1,
+			type: "deal",
+			pinned: false,
+			title: "50% off the Jordans at Sneaker World!",
+			content:
+				"Step into the game with the iconic Jordans – Style #AJ23. Sleek design, unbeatable comfort, and that legendary streetwear edge. Special price available only this week. Hurry before stock runs out!",
+			profiles: {
+				full_name: "Sneaker World",
+			},
+			created_at: "2026-05-12T08:30:00",
+		},
+
+		{
+			id: 2,
+			author_id: 2,
+			type: "announcement",
+			pinned: false,
+			title: "New Barber Now Available at Royal Touch",
+			content:
+				"We are excited to welcome Kevin the Barber to our team. Book your fresh fade or beard trim appointment starting this Friday.",
+			profiles: {
+				full_name: "Royal Touch Barbershop",
+			},
+			created_at: "2026-05-11T10:15:00",
+		},
+
+		{
+			id: 3,
+			author_id: 3,
+			type: "news",
+			pinned: false,
+			title: "Nyeri Tech Meetup Happening This Saturday",
+			content:
+				"Developers, designers, and tech enthusiasts are invited for a networking and learning session at CodeCraft Academy this weekend.",
+			profiles: {
+				full_name: "CodeCraft Academy",
+			},
+			created_at: "2026-05-10T16:45:00",
+		},
+
+		{
+			id: 4,
+			author_id: 4,
+			type: "wanted",
+			pinned: false,
+			title: "Looking for a Graphic Designer",
+			content:
+				"We are searching for a freelance graphic designer to help create promotional posters and social media content for our salon.",
+			profiles: {
+				full_name: "Glow House Salon",
+			},
+			created_at: "2026-05-09T13:20:00",
+		},
+
+		{
+			id: 5,
+			author_id: 5,
+			type: "deal",
+			pinned: true,
+			title: "Buy 2 Shirts, Get 1 Free!",
+			content:
+				"Visit Urban Wear this weekend and enjoy a free shirt when you buy any two official branded outfits.",
+			profiles: {
+				full_name: "Urban Wear",
+			},
+			created_at: "2026-05-08T09:00:00",
+		},
+
+		{
+			id: 6,
+			author_id: 6,
+			type: "general",
+			pinned: false,
+			title: "Best Coffee Spots Around Nyeri?",
+			content:
+				"I just moved here recently and I’m looking for recommendations for quiet coffee spots with good Wi-Fi and work-friendly environments.",
+			profiles: {
+				full_name: "Brian Mwangi",
+			},
+			created_at: "2026-05-07T18:10:00",
+		},
+
+		{
+			id: 7,
+			author_id: 7,
+			type: "announcement",
+			pinned: true,
+			title: "Laundry Pickup Services Expanded",
+			content:
+				"Sparkle Laundry now offers free pickup and delivery services within Nyeri town for orders above KES 1000.",
+			profiles: {
+				full_name: "Sparkle Laundry",
+			},
+			created_at: "2026-05-06T11:40:00",
+		},
+
+		{
+			id: 8,
+			author_id: 8,
+			type: "wanted",
+			pinned: false,
+			title: "Searching for a Part-Time Cashier",
+			content:
+				"Green Basket Market is hiring a reliable part-time cashier with good customer service and basic computer skills.",
+			profiles: {
+				full_name: "Green Basket Market",
+			},
+			created_at: "2026-05-05T15:30:00",
+		},
+
+		{
+			id: 9,
+			author_id: 9,
+			type: "news",
+			pinned: false,
+			title: "Heavy Discounts on Electronics This Month",
+			content:
+				"Pickaxe & Shovel has announced major discounts on phone accessories, laptop repairs, and gaming equipment throughout May.",
+			profiles: {
+				full_name: "Pickaxe & Shovel",
+			},
+			created_at: "2026-05-04T14:00:00",
+		},
+
+		{
+			id: 10,
+			author_id: 10,
+			type: "general",
+			pinned: true,
+			title: "Anyone Know a Good Math Tutor?",
+			content:
+				"I’m looking for a reliable mathematics tutor for high school level classes around Nyeri town. Recommendations are welcome.",
+			profiles: {
+				full_name: "Faith Wanjiku",
+			},
+			created_at: "2026-05-03T17:25:00",
+		},
+	];
+
 	const dataContextFeatures = {
 		limit,
 		dummyOrders,
 		STATUS_CONFIG,
+		STAT_ITEMS,
 		setLimit,
+		setStats,
 		profile,
 		user,
 		favHeart,
 		dummyBusinesses,
+		dummyReviews,
+		dummyCommunityPosts,
 	};
 
 	return (

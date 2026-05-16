@@ -7,13 +7,12 @@ import { useData } from "../lib/context/DataContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
 const Orders = () => {
-	const { dummyOrders, STATUS_CONFIG } = useData();
+	const { user, dummyOrders, STATUS_CONFIG } = useData();
+
 	const [orders, setOrders] = useState([]);
 	const [loading, setLoading] = useState(true);
 	// const { user } = useAuth();
 	const navigate = useNavigate();
-
-	const user = data.dummyUserProfile;
 
 	useEffect(() => {
 		if (!user) {

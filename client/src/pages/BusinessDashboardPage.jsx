@@ -127,12 +127,13 @@ import MetaDataInsert from "../lib/MetaDataInsert";
 import { ChevronLeft, Save, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import data from "../lib/data";
+import { useData } from "../lib/context/DataContext";
 
 const BusinessDashboardPage = () => {
+	const { user } = useData();
+
 	const { businessId } = useParams();
 	const isNew = businessId === "new";
-
-	const user = data.dummyUserProfile; // dummy variable
 
 	const [business, setBusiness] = useState(); // (useState < Business) | (null > null)
 	const [categories, setCategories] = useState([]);

@@ -8,12 +8,13 @@ import {
 	ShieldCheck,
 	User,
 } from "lucide-react";
+import { useData } from "../../lib/context/DataContext";
 
 const BottomNav = () => {
 	const location = useLocation();
 	// const { user, profile } = useAuth();
-	const user = true;
-	const profile = data.dummyUserProfile;
+	const { user, profile } = useData();
+
 	const isAdmin = profile?.role === "admin";
 
 	const navItems = [
