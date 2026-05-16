@@ -195,8 +195,10 @@ import data from "../lib/data";
 import CategoryFilter from "../components/business/CategoryFilter";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import BusinessCard from "../components/business/BusinessCard";
+import { useData } from "../lib/context/DataContext";
 
 const Discovery = () => {
+	const { dummyBusinesses } = useData();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [showFilters, setShowFilters] = useState(false);
 	const [sortBy, setSortBy] = useState("rating"); // (useState < "rating") | "newest" | ("name" > "rating")
@@ -214,7 +216,7 @@ const Discovery = () => {
 		// dummy fetch action
 		try {
 			setLoading(true);
-			setBusinesses([...data.dummyBusinesses]);
+			setBusinesses([...dummyBusinesses]);
 			setCategories([...data.dummyCategories]);
 		} catch (error) {
 			console.error(error);

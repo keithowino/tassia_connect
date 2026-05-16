@@ -355,9 +355,11 @@ import { useEffect, useState } from "react";
 import data from "../lib/data";
 import StarRating from "../components/common/StarRating";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useData } from "../lib/context/DataContext";
 
 const BusinessProfile = () => {
 	const { slug } = useParams();
+	const { dummyBusinesses } = useData();
 
 	const [business, setBusiness] = useState(null); // (useState < Business) | (null > null)
 	const [isFavorited, setIsFavorited] = useState(false);
@@ -400,10 +402,10 @@ const BusinessProfile = () => {
 			// setLoading(false);
 
 			try {
-				// const filterBySlug = data.dummyBusinesses.filter(
+				// const filterBySlug = dummyBusinesses.filter(
 				// 	(f) => f.slug === slug,
 				// );
-				const filterBySlug = data.dummyBusinesses.find(
+				const filterBySlug = dummyBusinesses.find(
 					(f) => f.slug === slug,
 				);
 				setBusiness(filterBySlug);

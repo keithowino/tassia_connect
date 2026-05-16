@@ -213,7 +213,7 @@ import BusinessCard from "../components/business/BusinessCard";
 import { useData } from "../lib/context/DataContext";
 
 const Home = () => {
-	const { limit } = useData();
+	const { limit, dummyBusinesses } = useData();
 
 	const [loading, setLoading] = useState(true);
 	const [businesses, setBusinesses] = useState([]);
@@ -237,7 +237,7 @@ const Home = () => {
 				.sort(() => Math.random() - 0.5)
 				.slice(0, limit);
 
-			const featuredBiz = data.dummyBusinesses.filter((f) => f.featured);
+			const featuredBiz = dummyBusinesses.filter((f) => f.featured);
 
 			const randBiz = [...featuredBiz]
 				.sort(() => Math.random() - 0.5)
