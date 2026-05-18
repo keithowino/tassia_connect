@@ -73,7 +73,7 @@ const Checkout = () => {
 			subtotal: item.product.price * item.quantity,
 		}));
 
-		await supabase.from("order_items").insert(orderItems);
+		// await supabase.from("order_items").insert(orderItems);
 		clearCart();
 		setOrderId(order.id);
 		setSuccess(true);

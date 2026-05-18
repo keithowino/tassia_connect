@@ -46,11 +46,18 @@ import { useCart } from "../lib/context/CartContext";
 const BusinessProfile = () => {
 	const { slug } = useParams();
 	const { addItem } = useCart();
-	const { user, dummyBusinesses, dummyReviews } = useData();
+	const {
+		user,
+		dummyBusinesses,
+		dummyReviews,
+		days,
+		today,
+		products_services,
+	} = useData();
 
 	const [business, setBusiness] = useState(null); // (useState < Business) | (null > null)
 	const [isFavorited, setIsFavorited] = useState(false);
-	const [activeTab, setActiveTab] = useState(); // (useState < "menu") | "reviews" | ("info" > "menu")
+	const [activeTab, setActiveTab] = useState("menu"); // (useState < "menu") | "reviews" | ("info" > "menu")
 	const [products, setProducts] = useState([]);
 	const [addedItems, setAddedItems] = useState(new Set()); // useState < Set < string >> new Set()
 	const [reviewForm, setReviewForm] = useState({ rating: 0, comment: "" });
@@ -94,7 +101,7 @@ const BusinessProfile = () => {
 					(f) => f.slug === slug,
 				);
 				setBusiness(filterBySlug);
-				setProducts(data.dummyProductsServices);
+				setProducts(products_services);
 				setReviews(dummyReviews);
 			} catch (error) {
 				console.error(error);
@@ -575,8 +582,8 @@ const BusinessProfile = () => {
 									Opening Hours
 								</h3>
 								<div className="grid grid-cols-2 gap-y-1.5">
-									{data.days.map((day) => {
-										const isToday = day === data.today;
+									{days.map((day) => {
+										const isToday = day === today;
 										const isOpen =
 											business.open_days.includes(day);
 										return (
