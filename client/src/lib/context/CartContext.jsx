@@ -1,9 +1,8 @@
 import { createContext, useContext, useState } from "react";
 
-// const CartContext = createContext(undefined);
-const CartContext = createContext();
+const CartContext = createContext(undefined);
 
-export const CartProvider = ({ children }) => {
+export function CartProvider({ children }) {
 	const [items, setItems] = useState([]);
 	const [cartBusinessId, setCartBusinessId] = useState(null);
 	const [cartBusinessName, setCartBusinessName] = useState("");
@@ -75,26 +74,26 @@ export const CartProvider = ({ children }) => {
 	);
 	const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
-	const CartContextFeatures = {
-		items,
-		cartBusinessId,
-		cartBusinessName,
-		addItem,
-		removeItem,
-		updateQuantity,
-		clearCart,
-		total,
-		itemCount,
-		isOpen,
-		setIsOpen,
-	};
-
 	return (
-		<CartContext.Provider value={CartContextFeatures}>
+		<CartContext.Provider
+			value={{
+				items,
+				cartBusinessId,
+				cartBusinessName,
+				addItem,
+				removeItem,
+				updateQuantity,
+				clearCart,
+				total,
+				itemCount,
+				isOpen,
+				setIsOpen,
+			}}
+		>
 			{children}
 		</CartContext.Provider>
 	);
-};
+}
 
 export function useCart() {
 	const ctx = useContext(CartContext);

@@ -20,6 +20,10 @@ const MetaDataInsert = ({ title = data.metadata.name }) => {
 			/>
 			<meta property="og:title" content={pageTitle} />
 			<meta property="og:description" content="Self made template." />
+			<meta
+				property="og:image"
+				content="https://raw.githubusercontent.com/keithowino/tassia_connect/refs/heads/main/client/public/site_image.png"
+			/>
 		</Helmet>
 	);
 };

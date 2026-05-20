@@ -1,71 +1,55 @@
-/**
-|--------------------------------------------------
-
-
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Store, Plus, CreditCard as Edit2, Trash2, Eye, Star, ShoppingCart, TrendingUp, ChevronLeft, Save, X, Package, Wrench, Clock, ClipboardList } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import type { Business, Category, ProductService, Order } from '../lib/types';
-import { useAuth } from '../context/AuthContext';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-
-type DashTab = 'overview' | 'products' | 'orders' | 'settings';
-
-export default function BusinessDashboardPage() {
-  const generateSlug = (name: string) =>
-    name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
-
-  const deleteProduct = async (id: string) => {
-    if (!window.confirm('Delete this item?')) return;
-    await supabase.from('products_services').delete().eq('id', id);
-    setProducts(prev => prev.filter(p => p.id !== id));
-  };
-
-  if (!user || (profile?.role !== 'business_owner' && profile?.role !== 'admin')) {
-    return <div className="text-center py-20 text-gray-500">Access denied</div>;
-  }
-  if (loading) return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;
-}
-
-
-|--------------------------------------------------
-*/
-
-import { Link, useNavigate, useParams } from "react-router-dom";
-import MetaDataInsert from "../lib/MetaDataInsert";
-import {
-	ChevronLeft,
-	ClipboardList,
-	Clock,
-	Eye,
-	Package,
-	Plus,
-	Save,
-	ShoppingCart,
-	Star,
-	Store,
-	Trash2,
-	TrendingUp,
-	Wrench,
-	X,
-} from "lucide-react";
 import { useEffect, useState } from "react";
-import data from "../lib/data";
-import { useData } from "../lib/context/DataContext";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+	Store,
+	Plus,
+	CreditCard as Edit2,
+	Trash2,
+	Eye,
+	Star,
+	ShoppingCart,
+	TrendingUp,
+	ChevronLeft,
+	Save,
+	X,
+	Package,
+	Wrench,
+	Clock,
+	ClipboardList,
+} from "lucide-react";
+import { db } from "../lib/firebase.config";
+import {
+	collection,
+	query,
+	where,
+	getDocs,
+	getDoc,
+	doc,
+	addDoc,
+	updateDoc,
+	deleteDoc,
+	orderBy,
+	limit,
+} from "firebase/firestore";
+import { useAuth } from "../lib/context/AuthContext";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import MetaDataInsert from "../lib/MetaDataInsert";
 
-const BusinessDashboardPage = () => {
-	// const { user, profile } = useAuth();
-	const { user, days, dummyBusinesses, dummyOrders, products_services } =
-		useData();
-
-	const { businessId } = useParams(); // keep in mind that this func returns a string
+export default function BusinessDashboard() {
+	const { businessId } = useParams();
 	const isNew = businessId === "new";
+	const { user, profile } = useAuth();
+	const navigate = useNavigate();
 
-	const [business, setBusiness] = useState(null); // (useState < Business) | (null > null)
+	const [business, setBusiness] = useState(null);
 	const [categories, setCategories] = useState([]);
+	const [products, setProducts] = useState([]);
+	const [orders, setOrders] = useState([]);
 	const [loading, setLoading] = useState(!isNew);
 	const [tab, setTab] = useState(isNew ? "settings" : "overview");
+	const [saving, setSaving] = useState(false);
+	const [showProductForm, setShowProductForm] = useState(false);
+
 	const [form, setForm] = useState({
 		name: "",
 		tagline: "",
@@ -86,113 +70,306 @@ const BusinessDashboardPage = () => {
 		cover_image: "",
 		open_days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 	});
-	const [saving, setSaving] = useState(false);
-	const [orders, setOrders] = useState([]);
-	const [showProductForm, setShowProductForm] = useState(false);
+
 	const [productForm, setProductForm] = useState({
 		name: "",
 		description: "",
 		price: 0,
-		type: "",
+		type: "product",
 		image_url: "",
 		available: true,
-	}); // type: 'product' as 'product' | 'service',
-	const [products, setProducts] = useState([]);
-
-	const navigate = useNavigate();
+	});
 
 	useEffect(() => {
-		// if (!user) { navigate('/auth'); return; }
-		// supabase.from('categories').select('*').order('sort_order').then(({ data }) => {
-		//   if (data) setCategories(data as Category[]);
-		// });
-		// if (!isNew && businessId) {
-		//   supabase.from('businesses').select('*, categories(*)').eq('id', businessId).maybeSingle().then(({ data }) => {
-		//     if (!data) { navigate('/dashboard/new'); return; }
-		//     const b = data as Business;
-		//     setBusiness(b);
-		// setForm({
-		//   name: b.name, tagline: b.tagline, description: b.description,
-		//   category_id: b.category_id || '', address: b.address,
-		//   floor_unit: b.floor_unit, location_label: b.location_label,
-		//   phone: b.phone, whatsapp: b.whatsapp, email: b.email, website: b.website,
-		//   opening_time: b.opening_time, closing_time: b.closing_time,
-		//   delivery_available: b.delivery_available, delivery_fee: b.delivery_fee,
-		//   min_order: b.min_order, cover_image: b.cover_image, open_days: b.open_days,
-		// });
-		//     supabase.from('products_services').select('*').eq('business_id', b.id).order('sort_order').then(({ data: p }) => {
-		//       if (p) setProducts(p as ProductService[]);
-		//     });
-		//     supabase.from('orders').select('*, order_items(*)').eq('business_id', b.id).order('created_at', { ascending: false }).limit(20).then(({ data: o }) => {
-		//       if (o) setOrders(o as Order[]);
-		//     });
-		//     setLoading(false);
-		//   });
-		// }
-
 		if (!user) {
 			navigate("/auth");
 			return;
 		}
 
-		// dummy try - catch action
-		try {
-			setCategories(data.dummyCategories);
+		const fetchCategories = async () => {
+			const categoriesQuery = query(
+				collection(db, "categories"),
+				orderBy("sort_order"),
+			);
+			const categoriesSnapshot = await getDocs(categoriesQuery);
+			const categoriesData = categoriesSnapshot.docs.map((doc) => ({
+				id: doc.id,
+				...doc.data(),
+			}));
+			setCategories(categoriesData);
+		};
 
-			if (!isNew && businessId) {
-				let b = dummyBusinesses.find(
-					(f) => f.id.toString() === businessId,
-				);
-				setBusiness(b);
-				setForm({
-					name: b.name,
-					tagline: b.tagline,
-					description: b.description,
-					category_id: b.category_id || "",
-					address: b.address,
-					floor_unit: b.floor_unit,
-					location_label: b.location_label,
-					phone: b.phone,
-					whatsapp: b.whatsapp,
-					email: b.email,
-					website: b.website,
-					opening_time: b.opening_time,
-					closing_time: b.closing_time,
-					delivery_available: b.delivery_available,
-					delivery_fee: b.delivery_fee,
-					min_order: b.min_order,
-					cover_image: b.cover_image,
-					open_days: b.open_days,
-				});
-				setProducts(products_services);
-				setOrders(
-					dummyOrders.filter(
-						(f) => f.business_id.toString() === businessId,
-					),
-				);
-				// ...
-			}
-		} catch (error) {
-			console.error(error);
-		} finally {
-			setLoading(false);
+		fetchCategories();
+
+		if (!isNew && businessId) {
+			const fetchBusinessData = async () => {
+				try {
+					// Fetch business
+					const businessRef = doc(db, "businesses", businessId);
+					const businessDoc = await getDoc(businessRef);
+
+					if (!businessDoc.exists()) {
+						navigate("/dashboard/new");
+						return;
+					}
+
+					const businessData = {
+						id: businessDoc.id,
+						...businessDoc.data(),
+					};
+
+					// Fetch category if exists
+					if (businessData.category_id) {
+						const categoryRef = doc(
+							db,
+							"categories",
+							businessData.category_id,
+						);
+						const categoryDoc = await getDoc(categoryRef);
+						if (categoryDoc.exists()) {
+							businessData.categories = {
+								id: categoryDoc.id,
+								...categoryDoc.data(),
+							};
+						}
+					}
+
+					setBusiness(businessData);
+					setForm({
+						name: businessData.name || "",
+						tagline: businessData.tagline || "",
+						description: businessData.description || "",
+						category_id: businessData.category_id || "",
+						address: businessData.address || "",
+						floor_unit: businessData.floor_unit || "",
+						location_label:
+							businessData.location_label || "Tassia Complex",
+						phone: businessData.phone || "",
+						whatsapp: businessData.whatsapp || "",
+						email: businessData.email || "",
+						website: businessData.website || "",
+						opening_time: businessData.opening_time || "08:00",
+						closing_time: businessData.closing_time || "20:00",
+						delivery_available:
+							businessData.delivery_available || false,
+						delivery_fee: businessData.delivery_fee || 0,
+						min_order: businessData.min_order || 0,
+						cover_image: businessData.cover_image || "",
+						open_days: businessData.open_days || [
+							"Mon",
+							"Tue",
+							"Wed",
+							"Thu",
+							"Fri",
+							"Sat",
+						],
+					});
+
+					// Fetch products
+					const productsQuery = query(
+						collection(db, "products_services"),
+						where("business_id", "==", businessId),
+						orderBy("sort_order"),
+					);
+					const productsSnapshot = await getDocs(productsQuery);
+					const productsData = productsSnapshot.docs.map((doc) => ({
+						id: doc.id,
+						...doc.data(),
+					}));
+					setProducts(productsData);
+
+					// Fetch orders
+					const ordersQuery = query(
+						collection(db, "orders"),
+						where("business_id", "==", businessId),
+						orderBy("created_at", "desc"),
+						limit(20),
+					);
+					const ordersSnapshot = await getDocs(ordersQuery);
+					const ordersData = [];
+
+					for (const orderDoc of ordersSnapshot.docs) {
+						const orderData = {
+							id: orderDoc.id,
+							...orderDoc.data(),
+						};
+
+						// Fetch order items
+						const orderItemsQuery = query(
+							collection(db, "order_items"),
+							where("order_id", "==", orderDoc.id),
+						);
+						const orderItemsSnapshot =
+							await getDocs(orderItemsQuery);
+						orderData.order_items = orderItemsSnapshot.docs.map(
+							(doc) => ({
+								id: doc.id,
+								...doc.data(),
+							}),
+						);
+
+						ordersData.push(orderData);
+					}
+					setOrders(ordersData);
+					setLoading(false);
+				} catch (error) {
+					console.error("Error fetching business data:", error);
+					setLoading(false);
+				}
+			};
+
+			fetchBusinessData();
 		}
 	}, [user, businessId, isNew, navigate]);
 
-	const handleSaveBusiness = async () => {
-		// if (!user || !form.name.trim()) return;
-		// setSaving(true);
-		// const payload = { ...form, owner_id: user.id, slug: business?.slug || generateSlug(form.name) };
-		// if (isNew) {
-		//   const { data, error } = await supabase.from('businesses').insert(payload).select('*, categories(*)').single();
-		//   if (data) { setBusiness(data as Business); navigate(`/dashboard/${data.id}`, { replace: true }); }
-		//   if (error) alert('Error saving business: ' + error.message);
-		// } else if (business) {
-		//   const { data } = await supabase.from('businesses').update(payload).eq('id', business.id).select('*, categories(*)').single();
-		//   if (data) setBusiness(data as Business);
-		// }
-		// setSaving(false);
+	const generateSlug = (name) => {
+		return (
+			name
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/(^-|-$)/g, "") +
+			"-" +
+			Date.now().toString(36)
+		);
 	};
+
+	const handleSaveBusiness = async () => {
+		if (!user || !form.name.trim()) return;
+		setSaving(true);
+
+		try {
+			const payload = {
+				...form,
+				owner_id: user.uid,
+				slug: business?.slug || generateSlug(form.name),
+				updated_at: new Date().toISOString(),
+			};
+
+			if (isNew) {
+				payload.created_at = new Date().toISOString();
+				payload.status = "pending";
+				payload.view_count = 0;
+				payload.average_rating = 0;
+
+				const docRef = await addDoc(
+					collection(db, "businesses"),
+					payload,
+				);
+				const newBusinessDoc = await getDoc(docRef);
+				const newBusiness = { id: docRef.id, ...newBusinessDoc.data() };
+
+				// Fetch category if exists
+				if (newBusiness.category_id) {
+					const categoryRef = doc(
+						db,
+						"categories",
+						newBusiness.category_id,
+					);
+					const categoryDoc = await getDoc(categoryRef);
+					if (categoryDoc.exists()) {
+						newBusiness.categories = {
+							id: categoryDoc.id,
+							...categoryDoc.data(),
+						};
+					}
+				}
+
+				setBusiness(newBusiness);
+				navigate(`/dashboard/${docRef.id}`, { replace: true });
+			} else if (business) {
+				const businessRef = doc(db, "businesses", business.id);
+				await updateDoc(businessRef, payload);
+
+				const updatedBusinessDoc = await getDoc(businessRef);
+				const updatedBusiness = {
+					id: business.id,
+					...updatedBusinessDoc.data(),
+				};
+
+				// Fetch category if exists
+				if (updatedBusiness.category_id) {
+					const categoryRef = doc(
+						db,
+						"categories",
+						updatedBusiness.category_id,
+					);
+					const categoryDoc = await getDoc(categoryRef);
+					if (categoryDoc.exists()) {
+						updatedBusiness.categories = {
+							id: categoryDoc.id,
+							...categoryDoc.data(),
+						};
+					}
+				}
+
+				setBusiness(updatedBusiness);
+			}
+		} catch (error) {
+			console.error("Error saving business:", error);
+			alert("Error saving business: " + error.message);
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleAddProduct = async () => {
+		if (!business || !productForm.name.trim()) return;
+
+		try {
+			const payload = {
+				...productForm,
+				business_id: business.id,
+				sort_order: products.length,
+				created_at: new Date().toISOString(),
+			};
+
+			const docRef = await addDoc(
+				collection(db, "products_services"),
+				payload,
+			);
+			const newProduct = { id: docRef.id, ...payload };
+			setProducts((prev) => [...prev, newProduct]);
+			setProductForm({
+				name: "",
+				description: "",
+				price: 0,
+				type: "product",
+				image_url: "",
+				available: true,
+			});
+			setShowProductForm(false);
+		} catch (error) {
+			console.error("Error adding product:", error);
+		}
+	};
+
+	const deleteProduct = async (id) => {
+		if (!window.confirm("Delete this item?")) return;
+		try {
+			const productRef = doc(db, "products_services", id);
+			await deleteDoc(productRef);
+			setProducts((prev) => prev.filter((p) => p.id !== id));
+		} catch (error) {
+			console.error("Error deleting product:", error);
+		}
+	};
+
+	const updateOrderStatus = async (orderId, status) => {
+		try {
+			const orderRef = doc(db, "orders", orderId);
+			await updateDoc(orderRef, {
+				status,
+				updated_at: new Date().toISOString(),
+			});
+			setOrders((prev) =>
+				prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
+			);
+		} catch (error) {
+			console.error("Error updating order status:", error);
+		}
+	};
+
+	const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 	const toggleDay = (day) =>
 		setForm((prev) => ({
@@ -202,22 +379,21 @@ const BusinessDashboardPage = () => {
 				: [...prev.open_days, day],
 		}));
 
-	const handleAddProduct = async () => {
-		if (!business || !productForm.name.trim()) return;
-		// const { data } = await supabase.from('products_services').insert({ ...productForm, business_id: business.id, sort_order: products.length }).select().single();
-		// if (data) { setProducts(prev => [...prev, data as ProductService]); setProductForm({ name: '', description: '', price: 0, type: 'product', image_url: '', available: true }); setShowProductForm(false); }
-	};
+	if (
+		!user ||
+		(profile?.role !== "business_owner" && profile?.role !== "admin")
+	) {
+		return (
+			<div className="text-center py-20 text-gray-500">Access denied</div>
+		);
+	}
 
-	const deleteProduct = async (id) => {
-		if (!window.confirm("Delete this item?")) return;
-		// await supabase.from('products_services').delete().eq('id', id);
-		// setProducts(prev => prev.filter(p => p.id !== id));
-	};
-
-	const updateOrderStatus = async (orderId, status) => {
-		// await supabase.from('orders').update({ status }).eq('id', orderId);
-		// setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
-	};
+	if (loading)
+		return (
+			<div className="flex justify-center py-20">
+				<LoadingSpinner size="lg" />
+			</div>
+		);
 
 	return (
 		<>
@@ -247,7 +423,7 @@ const BusinessDashboardPage = () => {
 											: "bg-red-100 text-red-600"
 								}`}
 							>
-								{business.status}
+								{business.status || "pending"}
 							</span>
 						)}
 					</div>
@@ -265,7 +441,7 @@ const BusinessDashboardPage = () => {
 										/>
 									),
 									label: "Views",
-									value: business.view_count,
+									value: business.view_count || 0,
 								},
 								{
 									icon: (
@@ -479,7 +655,7 @@ const BusinessDashboardPage = () => {
 								Open Days
 							</label>
 							<div className="flex gap-1.5 flex-wrap">
-								{days.map((day) => (
+								{DAYS.map((day) => (
 									<button
 										key={day}
 										type="button"
@@ -760,7 +936,7 @@ const BusinessDashboardPage = () => {
 									<div className="flex items-center justify-between mb-2">
 										<span className="font-mono text-xs text-gray-400">
 											#
-											{/* {order.id.slice(0, 8).toUpperCase()} */}
+											{order.id.slice(0, 8).toUpperCase()}
 										</span>
 										<span className="font-bold text-orange-500">
 											KES{" "}
@@ -806,9 +982,11 @@ const BusinessDashboardPage = () => {
 									</div>
 									<p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
 										<Clock size={11} />{" "}
-										{new Date(
-											order.created_at,
-										).toLocaleString("en-KE")}
+										{order.created_at
+											? new Date(
+													order.created_at,
+												).toLocaleString("en-KE")
+											: "Just now"}
 									</p>
 								</div>
 							))
@@ -862,6 +1040,4 @@ const BusinessDashboardPage = () => {
 			</section>
 		</>
 	);
-};
-
-export default BusinessDashboardPage;
+}

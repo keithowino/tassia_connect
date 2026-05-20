@@ -1,22 +1,26 @@
-import { ChevronDown, MapPin, Menu, ShoppingCart, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import data from "../../lib/data";
 import { useState } from "react";
-import { useData } from "../../lib/context/DataContext";
+import { Link, useNavigate } from "react-router-dom";
+import {
+	ShoppingCart,
+	Bell,
+	User,
+	Menu,
+	X,
+	MapPin,
+	ChevronDown,
+} from "lucide-react";
+import { useAuth } from "../../lib/context/AuthContext";
 import { useCart } from "../../lib/context/CartContext";
 
-const Header = () => {
-	// const { user, profile, signOut } = useAuth();
+export default function Header() {
+	const { user, profile, signOut } = useAuth();
 	const { itemCount, setIsOpen: setCartOpen } = useCart();
-	const { user, profile } = useData();
-
-	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
-
+	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const navigate = useNavigate();
 
 	const handleSignOut = async () => {
-		// await signOut();
+		await signOut();
 		setUserMenuOpen(false);
 		navigate("/");
 	};
@@ -68,6 +72,7 @@ const Header = () => {
 					<button
 						onClick={() => setCartOpen(true)}
 						className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+						aria-label="Open shopping cart"
 					>
 						<ShoppingCart size={20} className="text-gray-600" />
 						{itemCount > 0 && (
@@ -82,12 +87,16 @@ const Header = () => {
 							<button
 								onClick={() => setUserMenuOpen(!userMenuOpen)}
 								className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+								aria-label="User menu"
 							>
 								<div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
 									{profile?.avatar_url ? (
 										<img
 											src={profile.avatar_url}
-											alt=""
+											alt={
+												profile?.full_name ||
+												"User avatar"
+											}
 											className="w-8 h-8 rounded-full object-cover"
 										/>
 									) : (
@@ -99,59 +108,71 @@ const Header = () => {
 								</div>
 							</button>
 							{userMenuOpen && (
-								<div className="absolute right-0 top-12 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-									<div className="px-4 py-2 border-b border-gray-100">
-										<p className="font-semibold text-gray-900 text-sm truncate">
-											{profile?.full_name || "User"}
-										</p>
-										<p className="text-xs text-gray-500 capitalize">
-											{profile?.role}
-										</p>
+								<>
+									<div className="absolute right-0 top-12 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+										<div className="px-4 py-2 border-b border-gray-100">
+											<p className="font-semibold text-gray-900 text-sm truncate">
+												{profile?.full_name || "User"}
+											</p>
+											<p className="text-xs text-gray-500 capitalize">
+												{profile?.role || "user"}
+											</p>
+										</div>
+										<Link
+											to="/profile"
+											onClick={() =>
+												setUserMenuOpen(false)
+											}
+											className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+										>
+											My Profile
+										</Link>
+										<Link
+											to="/orders"
+											onClick={() =>
+												setUserMenuOpen(false)
+											}
+											className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+										>
+											My Orders
+										</Link>
+										{(profile?.role === "business_owner" ||
+											profile?.role === "admin") && (
+											<Link
+												to="/dashboard"
+												onClick={() =>
+													setUserMenuOpen(false)
+												}
+												className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											>
+												Business Dashboard
+											</Link>
+										)}
+										{profile?.role === "admin" && (
+											<Link
+												to="/admin"
+												onClick={() =>
+													setUserMenuOpen(false)
+												}
+												className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											>
+												Admin Panel
+											</Link>
+										)}
+										<button
+											onClick={handleSignOut}
+											className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+										>
+											Sign Out
+										</button>
 									</div>
-									<Link
-										to="/profile"
+									{/* Backdrop for closing menu when clicking outside */}
+									<div
+										className="fixed inset-0 z-40"
 										onClick={() => setUserMenuOpen(false)}
-										className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-									>
-										My Profile
-									</Link>
-									<Link
-										to="/orders"
-										onClick={() => setUserMenuOpen(false)}
-										className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-									>
-										My Orders
-									</Link>
-									{(profile?.role === "business_owner" ||
-										profile?.role === "admin") && (
-										<Link
-											to="/dashboard"
-											onClick={() =>
-												setUserMenuOpen(false)
-											}
-											className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-										>
-											Business Dashboard
-										</Link>
-									)}
-									{profile?.role === "admin" && (
-										<Link
-											to="/admin"
-											onClick={() =>
-												setUserMenuOpen(false)
-											}
-											className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-										>
-											Admin Panel
-										</Link>
-									)}
-									<button
-										onClick={handleSignOut}
-										className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-									>
-										Sign Out
-									</button>
-								</div>
+										aria-hidden="true"
+									/>
+								</>
 							)}
 						</div>
 					) : (
@@ -166,12 +187,14 @@ const Header = () => {
 					<button
 						className="md:hidden p-2 rounded-full hover:bg-gray-100"
 						onClick={() => setMenuOpen(!menuOpen)}
+						aria-label={menuOpen ? "Close menu" : "Open menu"}
 					>
 						{menuOpen ? <X size={20} /> : <Menu size={20} />}
 					</button>
 				</div>
 			</div>
 
+			{/* Mobile menu */}
 			{menuOpen && (
 				<div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 flex flex-col gap-2">
 					<Link
@@ -197,15 +220,6 @@ const Header = () => {
 					</Link>
 				</div>
 			)}
-
-			{userMenuOpen && (
-				<div
-					className="fixed inset-0 z-40"
-					onClick={() => setUserMenuOpen(false)}
-				/>
-			)}
 		</header>
 	);
-};
-
-export default Header;
+}

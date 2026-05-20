@@ -1,12 +1,9 @@
+import { X, Plus, Minus, ShoppingCart, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
-import { useState } from "react";
 import { useCart } from "../../lib/context/CartContext";
-import { useData } from "../../lib/context/DataContext";
+import { useAuth } from "../../lib/context/AuthContext";
 
-const CartDrawer = () => {
-	// const { user } = useAuth();
-	const { user } = useData();
+export default function CartDrawer() {
 	const {
 		items,
 		isOpen,
@@ -18,7 +15,7 @@ const CartDrawer = () => {
 		cartBusinessName,
 		cartBusinessId,
 	} = useCart();
-
+	const { user } = useAuth();
 	const navigate = useNavigate();
 
 	const handleCheckout = () => {
@@ -38,6 +35,7 @@ const CartDrawer = () => {
 			<div
 				className="fixed inset-0 bg-black/50 z-50"
 				onClick={() => setIsOpen(false)}
+				aria-label="Close cart"
 			/>
 			<div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white z-50 flex flex-col shadow-2xl">
 				<div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -57,6 +55,7 @@ const CartDrawer = () => {
 					<button
 						onClick={() => setIsOpen(false)}
 						className="p-2 rounded-full hover:bg-gray-100"
+						aria-label="Close cart"
 					>
 						<X size={20} />
 					</button>
@@ -91,6 +90,7 @@ const CartDrawer = () => {
 											src={item.product.image_url}
 											alt={item.product.name}
 											className="w-12 h-12 rounded-lg object-cover shrink-0"
+											loading="lazy"
 										/>
 									)}
 									<div className="flex-1 min-w-0">
@@ -111,6 +111,7 @@ const CartDrawer = () => {
 												)
 											}
 											className="w-7 h-7 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-orange-400 transition-colors"
+											aria-label="Decrease quantity"
 										>
 											<Minus size={13} />
 										</button>
@@ -125,6 +126,7 @@ const CartDrawer = () => {
 												)
 											}
 											className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
+											aria-label="Increase quantity"
 										>
 											<Plus size={13} />
 										</button>
@@ -161,6 +163,4 @@ const CartDrawer = () => {
 			</div>
 		</>
 	);
-};
-
-export default CartDrawer;
+}

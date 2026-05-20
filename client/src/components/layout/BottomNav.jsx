@@ -1,20 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
-import data from "../../lib/data";
 import {
-	ClipboardList,
 	Home,
-	MessageSquare,
 	Search,
-	ShieldCheck,
+	MessageSquare,
+	ClipboardList,
 	User,
+	ShieldCheck,
 } from "lucide-react";
-import { useData } from "../../lib/context/DataContext";
+import { useAuth } from "../../lib/context/AuthContext";
 
-const BottomNav = () => {
+export default function BottomNav() {
 	const location = useLocation();
-	// const { user, profile } = useAuth();
-	const { user, profile } = useData();
-
+	const { user, profile } = useAuth();
 	const isAdmin = profile?.role === "admin";
 
 	const navItems = [
@@ -35,6 +32,7 @@ const BottomNav = () => {
 						location.pathname === to ||
 						(to !== "/" && location.pathname.startsWith(to));
 					const isAdminTab = to === "/admin";
+
 					return (
 						<Link
 							key={to}
@@ -46,6 +44,8 @@ const BottomNav = () => {
 										: "text-orange-500"
 									: "text-gray-500"
 							}`}
+							aria-label={label}
+							aria-current={isActive ? "page" : undefined}
 						>
 							<Icon
 								size={22}
@@ -60,6 +60,4 @@ const BottomNav = () => {
 			</div>
 		</nav>
 	);
-};
-
-export default BottomNav;
+}

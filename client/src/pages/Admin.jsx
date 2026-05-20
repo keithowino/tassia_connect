@@ -1,110 +1,256 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+	ShieldCheck,
 	CheckCircle,
+	XCircle,
 	Eye,
 	RefreshCw,
-	ShieldCheck,
-	XCircle,
+	Store,
+	Users,
+	Star,
+	MessageSquare,
 } from "lucide-react";
-import MetaDataInsert from "../lib/MetaDataInsert";
-import { useEffect, useState } from "react";
-import { useData } from "../lib/context/DataContext";
+import { db } from "../lib/firebase.config";
+import {
+	collection,
+	query,
+	orderBy,
+	getDocs,
+	getCountFromServer,
+	doc,
+	updateDoc,
+	deleteDoc,
+	getDoc,
+	where,
+} from "firebase/firestore";
+import { useAuth } from "../lib/context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import MetaDataInsert from "../lib/MetaDataInsert";
 
-const Admin = () => {
-	// const { profile } = useAuth();
-	const {
-		STAT_ITEMS,
-		dummyBusinesses,
-		setStats,
-		dummyReviews,
-		dummyCommunityPosts,
-		profile,
-		dummyOrders,
-	} = useData();
-
-	const [loading, setLoading] = useState(false); // true
+export default function Admin() {
+	const { profile } = useAuth();
+	const navigate = useNavigate();
 	const [tab, setTab] = useState("businesses");
 	const [businesses, setBusinesses] = useState([]);
 	const [reviews, setReviews] = useState([]);
 	const [posts, setPosts] = useState([]);
-	// const [stats, setStats] = useState({ businesses: 0, users: 0, orders: 0, reviews: 0 }); // check in Data provider
+	const [loading, setLoading] = useState(true);
+	const [stats, setStats] = useState({
+		businesses: 0,
+		users: 0,
+		orders: 0,
+		reviews: 0,
+	});
 
-	const navigate = useNavigate();
+	useEffect(() => {
+		if (profile && profile.role !== "admin") {
+			navigate("/");
+			return;
+		}
+		if (!profile) return;
+		fetchAll();
+	}, [profile, navigate]);
 
 	const fetchAll = async () => {
-		// setLoading(true);
-		// const [bizRes, revRes, postRes, userCount, bizCount, orderCount, revCount] = await Promise.all([
-		//   supabase.from('businesses').select('*, categories(*), profiles(full_name, phone)').order('created_at', { ascending: false }),
-		//   supabase.from('reviews').select('*, profiles(full_name), businesses(name)').order('created_at', { ascending: false }),
-		//   supabase.from('community_posts').select('*, profiles(full_name)').order('created_at', { ascending: false }),
-		//   supabase.from('profiles').select('id', { count: 'exact', head: true }),
-		//   supabase.from('businesses').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-		//   supabase.from('orders').select('id', { count: 'exact', head: true }),
-		//   supabase.from('reviews').select('id', { count: 'exact', head: true }),
-		// ]);
-		// if (bizRes.data) setBusinesses(bizRes.data as Business[]);
-		// if (revRes.data) setReviews(revRes.data as Review[]);
-		// if (postRes.data) setPosts(postRes.data as CommunityPost[]);
-		// setStats({
-		//   businesses: bizCount.count || 0,
-		//   users: userCount.count || 0,
-		//   orders: orderCount.count || 0,
-		//   reviews: revCount.count || 0,
-		// });
-		// setLoading(false);
+		setLoading(true);
 
-		// dummy try - catch action
 		try {
-			setLoading(true);
-
-			setBusinesses(dummyBusinesses);
-			setReviews(dummyReviews);
-			setPosts(dummyCommunityPosts);
-
-			const activeBiz = dummyBusinesses.filter(
-				(f) => f.status === "active",
+			// Fetch businesses with related data
+			const businessesQuery = query(
+				collection(db, "businesses"),
+				orderBy("created_at", "desc"),
 			);
+			const businessesSnapshot = await getDocs(businessesQuery);
+			const businessesData = [];
 
-			let userCount = 1; // dummy variable
+			for (const bizDoc of businessesSnapshot.docs) {
+				const bizData = { id: bizDoc.id, ...bizDoc.data() };
+
+				// Fetch category if exists - FIXED: Use getDoc with document ID
+				if (bizData.category_id) {
+					const categoryRef = doc(
+						db,
+						"categories",
+						bizData.category_id,
+					);
+					const categoryDoc = await getDoc(categoryRef);
+					if (categoryDoc.exists()) {
+						bizData.categories = {
+							id: categoryDoc.id,
+							...categoryDoc.data(),
+						};
+					}
+				}
+
+				// Fetch owner profile - FIXED: Use getDoc with owner_id as document ID
+				if (bizData.owner_id) {
+					const ownerRef = doc(db, "profiles", bizData.owner_id);
+					const ownerDoc = await getDoc(ownerRef);
+					if (ownerDoc.exists()) {
+						bizData.profiles = ownerDoc.data();
+					}
+				}
+
+				businessesData.push(bizData);
+			}
+			setBusinesses(businessesData);
+
+			// Fetch reviews with related data
+			const reviewsQuery = query(
+				collection(db, "reviews"),
+				orderBy("created_at", "desc"),
+			);
+			const reviewsSnapshot = await getDocs(reviewsQuery);
+			const reviewsData = [];
+
+			for (const reviewDoc of reviewsSnapshot.docs) {
+				const reviewData = { id: reviewDoc.id, ...reviewDoc.data() };
+
+				// Fetch user profile - FIXED: Use getDoc with user_id as document ID
+				if (reviewData.user_id) {
+					const userRef = doc(db, "profiles", reviewData.user_id);
+					const userDoc = await getDoc(userRef);
+					if (userDoc.exists()) {
+						reviewData.profiles = userDoc.data();
+					}
+				}
+
+				// Fetch business name - FIXED: Use getDoc with business_id as document ID
+				if (reviewData.business_id) {
+					const businessRef = doc(
+						db,
+						"businesses",
+						reviewData.business_id,
+					);
+					const businessDoc = await getDoc(businessRef);
+					if (businessDoc.exists()) {
+						reviewData.businesses = {
+							name: businessDoc.data().name,
+						};
+					}
+				}
+
+				reviewsData.push(reviewData);
+			}
+			setReviews(reviewsData);
+
+			// Fetch community posts with related data
+			const postsQuery = query(
+				collection(db, "community_posts"),
+				orderBy("created_at", "desc"),
+			);
+			const postsSnapshot = await getDocs(postsQuery);
+			const postsData = [];
+
+			for (const postDoc of postsSnapshot.docs) {
+				const postData = { id: postDoc.id, ...postDoc.data() };
+
+				// Fetch user profile - FIXED: Use getDoc with author_id (not user_id)
+				const authorId = postData.author_id || postData.user_id;
+				if (authorId) {
+					const userRef = doc(db, "profiles", authorId);
+					const userDoc = await getDoc(userRef);
+					if (userDoc.exists()) {
+						postData.profiles = userDoc.data();
+					}
+				}
+
+				postsData.push(postData);
+			}
+			setPosts(postsData);
+
+			// Get counts - Note: getCountFromServer doesn't work with where clauses in some Firebase versions
+			// Alternative approach for counts:
+			const [
+				businessesSnapshot_all,
+				usersSnapshot,
+				ordersSnapshot,
+				reviewsSnapshot_all,
+			] = await Promise.all([
+				getDocs(
+					query(
+						collection(db, "businesses"),
+						where("status", "==", "approved"),
+					),
+				),
+				getDocs(collection(db, "profiles")),
+				getDocs(collection(db, "orders")),
+				getDocs(collection(db, "reviews")),
+			]);
 
 			setStats({
-				businesses: activeBiz.length || 0,
-				users: userCount || 0,
-				orders: dummyOrders.length || 0,
-				reviews: dummyReviews.length || 0,
+				businesses: businessesSnapshot_all.size,
+				users: usersSnapshot.size,
+				orders: ordersSnapshot.size,
+				reviews: reviewsSnapshot_all.size,
 			});
 		} catch (error) {
-			console.error(error);
+			console.error("Error fetching data:", error);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	useEffect(() => {
-		// if (profile && profile.role !== "admin") {
-		// 	navigate("/");
-		// 	return;
-		// }
-		// if (!profile) return;
-		fetchAll();
-	}, [profile, navigate]);
-
 	const updateBusinessStatus = async (id, status) => {
-		// await supabase.from('businesses').update({ status }).eq('id', id);
-		// setBusinesses(prev => prev.map(b => b.id === id ? { ...b, status: status as Business['status'] } : b));
-	};
-
-	const deleteReview = async (reviewId) => {
-		// if (!window.confirm('Delete this review?')) return;
-		// await supabase.from('reviews').delete().eq('id', reviewId);
-		// setReviews(prev => prev.filter(r => r.id !== reviewId));
+		try {
+			const businessRef = doc(db, "businesses", id);
+			await updateDoc(businessRef, { status });
+			setBusinesses((prev) =>
+				prev.map((b) => (b.id === id ? { ...b, status: status } : b)),
+			);
+		} catch (error) {
+			console.error("Error updating business status:", error);
+		}
 	};
 
 	const togglePin = async (postId, pinned) => {
-		// await supabase.from('community_posts').update({ pinned: !pinned }).eq('id', postId);
-		// setPosts(prev => prev.map(p => p.id === postId ? { ...p, pinned: !pinned } : p));
+		try {
+			const postRef = doc(db, "community_posts", postId);
+			await updateDoc(postRef, { pinned: !pinned });
+			setPosts((prev) =>
+				prev.map((p) =>
+					p.id === postId ? { ...p, pinned: !pinned } : p,
+				),
+			);
+		} catch (error) {
+			console.error("Error toggling pin:", error);
+		}
 	};
+
+	const deleteReview = async (reviewId) => {
+		if (!window.confirm("Delete this review?")) return;
+		try {
+			const reviewRef = doc(db, "reviews", reviewId);
+			await deleteDoc(reviewRef);
+			setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+		} catch (error) {
+			console.error("Error deleting review:", error);
+		}
+	};
+
+	const STAT_ITEMS = [
+		{
+			icon: <Store size={20} className="text-orange-500" />,
+			label: "Active Businesses",
+			value: stats.businesses,
+		},
+		{
+			icon: <Users size={20} className="text-blue-500" />,
+			label: "Total Users",
+			value: stats.users,
+		},
+		{
+			icon: <Star size={20} className="text-amber-500" />,
+			label: "Total Reviews",
+			value: stats.reviews,
+		},
+		{
+			icon: <MessageSquare size={20} className="text-green-500" />,
+			label: "Total Orders",
+			value: stats.orders,
+		},
+	];
 
 	if (!profile || profile.role !== "admin") return null;
 
@@ -119,7 +265,7 @@ const Admin = () => {
 					</h1>
 					<button
 						onClick={fetchAll}
-						className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${loading ? "animate-spin" : ""}`}
+						className="p-2 rounded-full hover:bg-gray-100 transition-colors"
 					>
 						<RefreshCw size={18} className="text-gray-500" />
 					</button>
@@ -173,17 +319,21 @@ const Admin = () => {
 													{biz.name}
 												</p>
 												<p className="text-xs text-gray-500">
-													{biz.categories?.name} ·{" "}
-													{biz.location_label}
+													{biz.categories?.name ||
+														"Uncategorized"}{" "}
+													· {biz.location_label}
 												</p>
 												<p className="text-xs text-gray-400 mt-0.5">
 													Owner:{" "}
 													{biz.profiles?.full_name ||
+														biz.profiles?.name ||
 														"Unknown"}{" "}
 													·{" "}
-													{new Date(
-														biz.created_at,
-													).toLocaleDateString()}
+													{biz.created_at
+														? new Date(
+																biz.created_at,
+															).toLocaleDateString()
+														: "Unknown date"}
 												</p>
 												<div className="flex items-center gap-2 mt-1">
 													<Eye
@@ -191,7 +341,8 @@ const Admin = () => {
 														className="text-gray-400"
 													/>
 													<span className="text-xs text-gray-400">
-														{biz.view_count} views
+														{biz.view_count || 0}{" "}
+														views
 													</span>
 												</div>
 											</div>
@@ -207,7 +358,7 @@ const Admin = () => {
 																: "bg-red-100 text-red-600"
 													}`}
 												>
-													{biz.status}
+													{biz.status || "pending"}
 												</span>
 												{biz.status !== "approved" && (
 													<button
@@ -257,10 +408,14 @@ const Admin = () => {
 											<div className="flex-1">
 												<p className="font-semibold text-gray-900 text-sm">
 													{review.profiles
-														?.full_name || "User"}
+														?.full_name ||
+														review.profiles?.name ||
+														"Anonymous User"}
 												</p>
 												<p className="text-xs text-gray-500">
-													on {review.businesses?.name}
+													on{" "}
+													{review.businesses?.name ||
+														"Unknown Business"}
 												</p>
 												<div className="flex items-center gap-1 mt-1">
 													{"★".repeat(review.rating)}
@@ -274,9 +429,11 @@ const Admin = () => {
 													</p>
 												)}
 												<p className="text-xs text-gray-400 mt-1">
-													{new Date(
-														review.created_at,
-													).toLocaleDateString()}
+													{review.created_at
+														? new Date(
+																review.created_at,
+															).toLocaleDateString()
+														: "Unknown date"}
 												</p>
 											</div>
 											<button
@@ -306,10 +463,15 @@ const Admin = () => {
 													{post.title}
 												</p>
 												<p className="text-xs text-gray-500">
-													{post.profiles?.full_name} ·{" "}
-													{new Date(
-														post.created_at,
-													).toLocaleDateString()}
+													{post.profiles?.full_name ||
+														post.profiles?.name ||
+														"Anonymous"}{" "}
+													·{" "}
+													{post.created_at
+														? new Date(
+																post.created_at,
+															).toLocaleDateString()
+														: "Unknown date"}
 												</p>
 												<p className="text-sm text-gray-600 mt-1 line-clamp-2">
 													{post.content}
@@ -336,6 +498,4 @@ const Admin = () => {
 			</section>
 		</>
 	);
-};
-
-export default Admin;
+}

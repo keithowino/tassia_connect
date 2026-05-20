@@ -15,20 +15,26 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Layout from "./components/layout/Layout";
 import { useEffect, useState } from "react";
-import data from "./lib/data";
 import LoadingSpinner from "./components/common/LoadingSpinner";
-import BusinessDashboardPage from "./pages/BusinessDashboardPage";
-import { DataProvider, useData } from "./lib/context/DataContext";
 import { CartProvider } from "./lib/context/CartContext";
 import Checkout from "./pages/Checkout";
+import BusinessDashboard from "./pages/BusinessDashboard";
+import { AuthProvider } from "./lib/context/AuthContext";
+import { db } from "./lib/firebase.config";
+import {
+	collection,
+	query,
+	where,
+	getDocs,
+	orderBy,
+	limit,
+} from "firebase/firestore";
+import { useAuth } from "./lib/context/AuthContext";
+import { DataProvider } from "./lib/context/DataContext";
 
 function DashboardRedirect() {
-	// const { user, loading } = useAuth();
-	const { user } = useData();
-
-	const [redirect, setRedirect] = useState(null); // (useState < string) | (null > null)
-
-	const loading = false; // dummy variable
+	const { user, loading } = useAuth();
+	const [redirect, setRedirect] = useState(null);
 
 	useEffect(() => {
 		if (loading) return;
@@ -36,17 +42,30 @@ function DashboardRedirect() {
 			setRedirect("/auth");
 			return;
 		}
-		// 	supabase
-		// 		.from("businesses")
-		// 		.select("id")
-		// 		.eq("owner_id", user.id)
-		// 		.order("created_at", { ascending: true })
-		// 		.limit(1)
-		// 		.maybeSingle()
-		// 		.then(({ data }) => {
-		// 			setRedirect(data ? `/dashboard/${data.id}` : "/dashboard/new");
-		// 		});
-		setRedirect(user ? `/dashboard/${user.id}` : "/dashboard/new"); // dummy set action
+
+		const fetchUserBusiness = async () => {
+			try {
+				const businessesQuery = query(
+					collection(db, "businesses"),
+					where("owner_id", "==", user.uid),
+					orderBy("created_at", "asc"),
+					limit(1),
+				);
+				const businessesSnapshot = await getDocs(businessesQuery);
+
+				if (!businessesSnapshot.empty) {
+					const firstBusiness = businessesSnapshot.docs[0];
+					setRedirect(`/dashboard/${firstBusiness.id}`);
+				} else {
+					setRedirect("/dashboard/new");
+				}
+			} catch (error) {
+				console.error("Error fetching user businesses:", error);
+				setRedirect("/dashboard/new");
+			}
+		};
+
+		fetchUserBusiness();
 	}, [user, loading]);
 
 	if (!redirect) {
@@ -56,7 +75,6 @@ function DashboardRedirect() {
 			</div>
 		);
 	}
-
 	return <Navigate to={redirect} replace />;
 }
 
@@ -79,7 +97,7 @@ const App = () => {
 					<Route path="/dashboard" element={<DashboardRedirect />} />
 					<Route
 						path="/dashboard/:businessId"
-						element={<BusinessDashboardPage />}
+						element={<BusinessDashboard />}
 					/>
 					<Route
 						path="/checkout/:businessId"
@@ -92,13 +110,15 @@ const App = () => {
 
 	return (
 		<DataProvider>
-			<CartProvider>
-				<HelmetProvider>
-					<Router>
-						<AuthenticatedApp />
-					</Router>
-				</HelmetProvider>
-			</CartProvider>
+			<AuthProvider>
+				<CartProvider>
+					<HelmetProvider>
+						<Router>
+							<AuthenticatedApp />
+						</Router>
+					</HelmetProvider>
+				</CartProvider>
+			</AuthProvider>
 		</DataProvider>
 	);
 };
