@@ -221,7 +221,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-Refer to `.env.example` for guidance.
+Refer to `client/.env.example` for guidance.
 
 ---
 
