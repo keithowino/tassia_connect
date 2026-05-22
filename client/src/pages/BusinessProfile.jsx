@@ -435,7 +435,7 @@ export default function BusinessProfile() {
 						/>
 					</button>
 				)}
-				<div className="absolute bottom-4 left-4 right-4">
+				<div className="absolute bottom-10 left-4 right-4">
 					<h1 className="text-2xl font-extrabold text-white">
 						{business.name}
 					</h1>

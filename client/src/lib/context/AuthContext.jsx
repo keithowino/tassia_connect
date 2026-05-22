@@ -2,13 +2,15 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
+	signInWithPopup,
+	GoogleAuthProvider,
 	signOut as firebaseSignOut,
 	onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase.config";
 
-const AuthContext = createContext(undefined); // explain this
+const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
 	const [user, setUser] = useState(null);
@@ -21,6 +23,7 @@ export function AuthProvider({ children }) {
 			if (userDoc.exists()) {
 				setProfile({ id: userDoc.id, ...userDoc.data() });
 			} else {
+				// If profile doesn't exist, create one for Google Sign-in users
 				setProfile(null);
 			}
 		} catch (error) {
@@ -47,6 +50,7 @@ export function AuthProvider({ children }) {
 		return () => unsubscribe();
 	}, []);
 
+	// Email/Password Sign Up
 	const signUp = async (email, password, fullName, role = "user") => {
 		try {
 			const userCredential = await createUserWithEmailAndPassword(
@@ -70,11 +74,45 @@ export function AuthProvider({ children }) {
 		}
 	};
 
+	// Email/Password Sign In
 	const signIn = async (email, password) => {
 		try {
 			await signInWithEmailAndPassword(auth, email, password);
 			return { error: null };
 		} catch (error) {
+			return { error };
+		}
+	};
+
+	// NEW: Google Sign In
+	const signInWithGoogle = async () => {
+		try {
+			const provider = new GoogleAuthProvider();
+			provider.setCustomParameters({
+				prompt: "select_account",
+			});
+
+			const result = await signInWithPopup(auth, provider);
+			const user = result.user;
+
+			// Check if profile exists, if not create one
+			const profileDoc = await getDoc(doc(db, "profiles", user.uid));
+
+			if (!profileDoc.exists()) {
+				// Create profile for Google Sign-in user
+				await setDoc(doc(db, "profiles", user.uid), {
+					full_name: user.displayName || user.email.split("@")[0],
+					role: "user", // Default role
+					email: user.email,
+					created_at: new Date().toISOString(),
+					auth_provider: "google",
+				});
+				await fetchProfile(user.uid);
+			}
+
+			return { error: null, user };
+		} catch (error) {
+			console.error("Google Sign-In Error:", error);
 			return { error };
 		}
 	};
@@ -89,6 +127,7 @@ export function AuthProvider({ children }) {
 		loading,
 		signUp,
 		signIn,
+		signInWithGoogle, // Add this to exports
 		signOut,
 		refreshProfile,
 	};
