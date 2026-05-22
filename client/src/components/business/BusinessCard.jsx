@@ -58,7 +58,7 @@ export default function BusinessCard({
 						</span>
 					)}
 					<span
-						className={`absolute top-2 right-10 text-xs font-semibold px-2 py-0.5 rounded-full ${open ? "bg-green-500 text-white" : "bg-gray-700 text-gray-200"}`}
+						className={`absolute top-2 text-xs font-semibold px-2 py-0.5 rounded-full ${onToggleFavorite ? "right-10" : "right-2"} ${open ? "bg-green-500 text-white" : "bg-gray-700 text-gray-200"}`}
 					>
 						{open ? "Open" : "Closed"}
 					</span>
