@@ -10,11 +10,11 @@ import {
 	ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../lib/context/AuthContext";
-import { useCart } from "../../lib/context/CartContext";
+// import { useCart } from "../../lib/context/CartContext";
 
 export default function Header() {
 	const { user, profile, signOut } = useAuth();
-	const { itemCount, setIsOpen: setCartOpen } = useCart();
+	// const { itemCount, setIsOpen: setCartOpen } = useCart();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const navigate = useNavigate();
@@ -69,7 +69,7 @@ export default function Header() {
 				</nav>
 
 				<div className="flex items-center gap-2">
-					<button
+					{/* <button
 						onClick={() => setCartOpen(true)}
 						className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
 						aria-label="Open shopping cart"
@@ -80,7 +80,7 @@ export default function Header() {
 								{itemCount > 9 ? "9+" : itemCount}
 							</span>
 						)}
-					</button>
+					</button> */}
 
 					{user ? (
 						<div className="relative">
