@@ -71,13 +71,16 @@ export const orderAPI = {
 
 // Community API
 export const communityAPI = {
-	getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
+	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
 	getAll: (page = 1, limit = 20) =>
 		api.get(`/community/posts?page=${page}&limit=${limit}`),
+	getByType: (type, page = 1, limit = 20) =>
+		api.get(`/community/posts?type=${type}&page=${page}&limit=${limit}`),
 	getById: (id) => api.get(`/community/posts/${id}`),
 	create: (data) => api.post("/community/posts", data),
 	update: (id, data) => api.put(`/community/posts/${id}`, data),
 	delete: (id) => api.delete(`/community/posts/${id}`),
+	togglePin: (id) => api.patch(`/community/posts/${id}/pin`),
 };
 
 // Category API
@@ -179,5 +182,15 @@ function getDefaultColorForCategory(category) {
 	}
 	return "#6b7280";
 }
+
+// Add to your existing api.js file
+
+// Favorites API
+export const favoritesAPI = {
+	getMyFavorites: () => api.get("/favorites"),
+	addFavorite: (businessId) => api.post("/favorites", { businessId }),
+	removeFavorite: (businessId) => api.delete(`/favorites/${businessId}`),
+	checkFavorite: (businessId) => api.get(`/favorites/check/${businessId}`),
+};
 
 export default api;

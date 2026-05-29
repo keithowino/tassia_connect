@@ -223,9 +223,9 @@ export function AuthProvider({ children }) {
 	};
 
 	// Google Sign In
-	const signInWithGoogle = async (googleData) => {
+	const signInWithGoogle = async (googleUserData) => {
 		try {
-			const response = await authAPI.googleSignIn(googleData);
+			const response = await authAPI.googleSignIn(googleUserData);
 			const { token, ...userData } = response.data;
 			localStorage.setItem("token", token);
 			localStorage.setItem("user", JSON.stringify(userData));

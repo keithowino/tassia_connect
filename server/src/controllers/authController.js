@@ -12,6 +12,13 @@ export const register = async (req, res) => {
 	try {
 		const { email, password, fullName, role } = req.body;
 
+		// Validate required fields
+		if (!email || !password || !fullName) {
+			return res.status(400).json({
+				message: "Please provide email, password, and full name",
+			});
+		}
+
 		// Check if user exists
 		const userExists = await User.findOne({ email });
 		if (userExists) {
@@ -36,7 +43,18 @@ export const register = async (req, res) => {
 			token,
 		});
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		console.error("Registration error:", error);
+		console.error("Error details:", error.message);
+		console.error("Stack trace:", error.stack);
+
+		// Send more specific error message
+		res.status(500).json({
+			message: error.message || "Registration failed",
+			error:
+				process.env.NODE_ENV === "development"
+					? error.stack
+					: undefined,
+		});
 	}
 };
 
@@ -76,20 +94,67 @@ export const getMe = async (req, res) => {
 	}
 };
 
-// Google Sign In (simplified - you'll need to verify Google token)
+// // Google Sign In (simplified - you'll need to verify Google token)
+// export const googleSignIn = async (req, res) => {
+// 	try {
+// 		const { email, fullName, googleId } = req.body;
+
+// 		let user = await User.findOne({ email });
+
+// 		if (!user) {
+// 			user = await User.create({
+// 				email,
+// 				fullName,
+// 				password: googleId + Math.random().toString(36),
+// 				authProvider: "google",
+// 			});
+// 		}
+
+// 		const token = generateToken(user._id);
+
+// 		res.json({
+// 			_id: user._id,
+// 			email: user.email,
+// 			fullName: user.fullName,
+// 			role: user.role,
+// 			token,
+// 		});
+// 	} catch (error) {
+// 		res.status(500).json({ message: error.message });
+// 	}
+// };
+
+// Google Sign In - Updated to accept user data from frontend
 export const googleSignIn = async (req, res) => {
 	try {
-		const { email, fullName, googleId } = req.body;
+		const { email, fullName, googleId, picture } = req.body;
 
+		console.log("Google sign in attempt for:", email);
+
+		if (!email || !fullName || !googleId) {
+			return res.status(400).json({
+				message: "Missing required Google user data",
+			});
+		}
+
+		// Check if user exists
 		let user = await User.findOne({ email });
 
 		if (!user) {
+			// Create new user
 			user = await User.create({
 				email,
 				fullName,
-				password: googleId + Math.random().toString(36),
+				password: googleId + Math.random().toString(36), // Random password since they use Google
 				authProvider: "google",
+				profileImage: picture || null,
+				isActive: true,
+				role: "user", // Default role, can be updated later
 			});
+
+			console.log("New Google user created:", user._id);
+		} else {
+			console.log("Existing Google user logged in:", user._id);
 		}
 
 		const token = generateToken(user._id);
@@ -99,9 +164,13 @@ export const googleSignIn = async (req, res) => {
 			email: user.email,
 			fullName: user.fullName,
 			role: user.role,
+			profileImage: user.profileImage,
 			token,
 		});
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		console.error("Google Sign-In error:", error);
+		res.status(500).json({
+			message: error.message || "Google sign in failed",
+		});
 	}
 };

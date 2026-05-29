@@ -133,13 +133,10 @@ import {
 } from "react-router-dom";
 import Home from "./pages/Home";
 import { HelmetProvider } from "react-helmet-async";
-// import Discovery from "./pages/Discovery";
-// import Community from "./pages/Community";
 // import BusinessProfile from "./pages/BusinessProfile";
 // import Profile from "./pages/Profile";
 // import Orders from "./pages/Orders";
 // import Admin from "./pages/Admin";
-// import Auth from "./pages/Auth";
 import Layout from "./components/layout/Layout";
 import { useEffect, useState } from "react";
 // import LoadingSpinner from "./components/common/LoadingSpinner";
@@ -149,7 +146,11 @@ import { useEffect, useState } from "react";
 import { AuthProvider } from "./lib/context/AuthContext";
 import { useAuth } from "./lib/context/AuthContext";
 import { DataProvider } from "./lib/context/DataContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { businessAPI } from "./lib/api";
+import Discovery from "./pages/Discovery";
+import Community from "./pages/Community";
+import Auth from "./pages/Auth";
 
 function DashboardRedirect() {
 	const { user, loading } = useAuth();
@@ -197,10 +198,10 @@ const App = () => {
 			<Routes>
 				<Route path="/" element={<Layout />}>
 					{/* <Route path="/admin" element={<Admin />} /> */}
-					{/* <Route path="/auth" element={<Auth />} /> */}
+					<Route path="/auth" element={<Auth />} />
 					<Route index element={<Home />} />
-					{/* <Route path="/discover" element={<Discovery />} /> */}
-					{/* <Route path="/community" element={<Community />} /> */}
+					<Route path="/discover" element={<Discovery />} />
+					<Route path="/community" element={<Community />} />
 					{/* <Route
 						path="/business/:slug"
 						element={<BusinessProfile />}
@@ -222,16 +223,18 @@ const App = () => {
 	};
 
 	return (
-		<AuthProvider>
-			<DataProvider>
-				{/* <CartProvider> */}
-				<HelmetProvider>
-					<Router>
-						<AuthenticatedApp />
-					</Router>
-				</HelmetProvider>
-			</DataProvider>
-		</AuthProvider>
+		<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+			<AuthProvider>
+				<DataProvider>
+					{/* <CartProvider> */}
+					<HelmetProvider>
+						<Router>
+							<AuthenticatedApp />
+						</Router>
+					</HelmetProvider>
+				</DataProvider>
+			</AuthProvider>
+		</GoogleOAuthProvider>
 	);
 };
 
