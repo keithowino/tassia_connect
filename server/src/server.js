@@ -8,6 +8,7 @@ import businessRoutes from "./routes/businessRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 const envFile =
 	process.env.NODE_ENV === "production"
@@ -52,6 +53,7 @@ app.use("/api/businesses", businessRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
