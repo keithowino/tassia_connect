@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "../lib/context/AuthContext";
 import { useCart } from "../lib/context/CartContext";
+import MetaDataInsert from "../lib/MetaDataInsert";
 
 export default function Checkout() {
 	const { businessId } = useParams();
@@ -115,44 +116,51 @@ export default function Checkout() {
 
 	if (success) {
 		return (
-			<div className="max-w-md mx-auto px-4 py-16 text-center">
-				<div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-					<CheckCircle size={40} className="text-green-500" />
-				</div>
-				<h1 className="text-2xl font-extrabold text-gray-900 mb-2">
-					Order Placed!
-				</h1>
-				<p className="text-gray-500 mb-6">
-					Your order has been sent to{" "}
-					<strong>{cartBusinessName}</strong>. They'll confirm
-					shortly.
-				</p>
-				<div className="bg-orange-50 rounded-2xl p-4 mb-6 text-left">
-					<p className="text-sm text-orange-700">
-						Order ID:{" "}
-						<span className="font-mono font-bold">
-							{orderId.slice(0, 8).toUpperCase()}
-						</span>
+			<>
+				<MetaDataInsert
+					title="Checkout"
+					description="Complete your order securely. Review items, confirm delivery details, and make payment."
+				/>
+
+				<section className="max-w-md mx-auto px-4 py-16 text-center">
+					<div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<CheckCircle size={40} className="text-green-500" />
+					</div>
+					<h1 className="text-2xl font-extrabold text-gray-900 mb-2">
+						Order Placed!
+					</h1>
+					<p className="text-gray-500 mb-6">
+						Your order has been sent to{" "}
+						<strong>{cartBusinessName}</strong>. They'll confirm
+						shortly.
 					</p>
-					<p className="text-sm text-orange-700 mt-1">
-						Status: <span className="font-bold">Pending</span>
-					</p>
-				</div>
-				<div className="space-y-3">
-					<Link
-						to="/orders"
-						className="block w-full bg-orange-500 text-white py-3 rounded-2xl font-bold hover:bg-orange-600 transition-colors"
-					>
-						Track Order
-					</Link>
-					<Link
-						to="/discover"
-						className="block w-full bg-gray-100 text-gray-700 py-3 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
-					>
-						Continue Browsing
-					</Link>
-				</div>
-			</div>
+					<div className="bg-orange-50 rounded-2xl p-4 mb-6 text-left">
+						<p className="text-sm text-orange-700">
+							Order ID:{" "}
+							<span className="font-mono font-bold">
+								{orderId.slice(0, 8).toUpperCase()}
+							</span>
+						</p>
+						<p className="text-sm text-orange-700 mt-1">
+							Status: <span className="font-bold">Pending</span>
+						</p>
+					</div>
+					<div className="space-y-3">
+						<Link
+							to="/orders"
+							className="block w-full bg-orange-500 text-white py-3 rounded-2xl font-bold hover:bg-orange-600 transition-colors"
+						>
+							Track Order
+						</Link>
+						<Link
+							to="/discover"
+							className="block w-full bg-gray-100 text-gray-700 py-3 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+						>
+							Continue Browsing
+						</Link>
+					</div>
+				</section>
+			</>
 		);
 	}
 

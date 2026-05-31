@@ -7,7 +7,7 @@ export const getAllPosts = async (req, res) => {
 		const skip = (page - 1) * limit;
 
 		let query = {};
-		if (type && type !== "all") {
+		if (type && type !== "all" && type !== "undefined") {
 			query.type = type;
 		}
 
@@ -26,6 +26,7 @@ export const getAllPosts = async (req, res) => {
 			pages: Math.ceil(total / limit),
 		});
 	} catch (error) {
+		console.error("Error fetching posts:", error);
 		res.status(500).json({ message: error.message });
 	}
 };
@@ -51,18 +52,26 @@ export const getPostById = async (req, res) => {
 // Create new post
 export const createPost = async (req, res) => {
 	try {
+		const { title, content, type } = req.body;
+
+		if (!title || !content) {
+			return res
+				.status(400)
+				.json({ message: "Title and content are required" });
+		}
+
 		const post = await CommunityPost.create({
-			title: req.body.title,
-			content: req.body.content,
-			type: req.body.type,
+			title,
+			content,
+			type: type || "general",
 			authorId: req.user._id,
 		});
 
-		// Populate author info for response
 		await post.populate("authorId", "fullName email profileImage");
 
 		res.status(201).json(post);
 	} catch (error) {
+		console.error("Error creating post:", error);
 		res.status(500).json({ message: error.message });
 	}
 };
@@ -93,7 +102,7 @@ export const updatePost = async (req, res) => {
 				content: req.body.content,
 				type: req.body.type,
 			},
-			{ new: true, runValidators: true },
+			{ returnDocument: "after", runValidators: true },
 		).populate("authorId", "fullName email profileImage");
 
 		res.json(updated);

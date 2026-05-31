@@ -94,37 +94,7 @@ export const getMe = async (req, res) => {
 	}
 };
 
-// // Google Sign In (simplified - you'll need to verify Google token)
-// export const googleSignIn = async (req, res) => {
-// 	try {
-// 		const { email, fullName, googleId } = req.body;
-
-// 		let user = await User.findOne({ email });
-
-// 		if (!user) {
-// 			user = await User.create({
-// 				email,
-// 				fullName,
-// 				password: googleId + Math.random().toString(36),
-// 				authProvider: "google",
-// 			});
-// 		}
-
-// 		const token = generateToken(user._id);
-
-// 		res.json({
-// 			_id: user._id,
-// 			email: user.email,
-// 			fullName: user.fullName,
-// 			role: user.role,
-// 			token,
-// 		});
-// 	} catch (error) {
-// 		res.status(500).json({ message: error.message });
-// 	}
-// };
-
-// Google Sign In - Updated to accept user data from frontend
+// Google Sign In
 export const googleSignIn = async (req, res) => {
 	try {
 		const { email, fullName, googleId, picture } = req.body;

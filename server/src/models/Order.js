@@ -83,7 +83,7 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Generate order number before saving
-orderSchema.pre("save", async function (next) {
+orderSchema.pre("save", async function () {
 	if (!this.orderNumber) {
 		const date = new Date();
 		const year = date.getFullYear();
@@ -94,7 +94,6 @@ orderSchema.pre("save", async function (next) {
 			.padStart(4, "0");
 		this.orderNumber = `ORD-${year}${month}${day}-${random}`;
 	}
-	next();
 });
 
 export default mongoose.model("Order", orderSchema);

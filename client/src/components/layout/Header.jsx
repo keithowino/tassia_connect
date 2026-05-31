@@ -354,13 +354,13 @@ export default function Header() {
 
 				{/* Desktop Navigation */}
 				<nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-					<Link
+					{/* <Link
 						to="/"
 						className="hover:text-orange-500 transition-colors flex items-center gap-1"
 					>
 						<Home size={16} />
 						Home
-					</Link>
+					</Link> */}
 					<Link
 						to="/discover"
 						className="hover:text-orange-500 transition-colors flex items-center gap-1"
@@ -539,14 +539,14 @@ export default function Header() {
 			{/* Mobile Navigation Menu */}
 			{menuOpen && (
 				<div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 flex flex-col gap-2 animate-in slide-in-from-top duration-200">
-					<Link
+					{/* <Link
 						to="/"
 						onClick={() => setMenuOpen(false)}
 						className="flex items-center gap-3 py-2.5 px-3 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
 					>
 						<Home size={18} className="text-gray-500" />
 						Home
-					</Link>
+					</Link> */}
 					<Link
 						to="/discover"
 						onClick={() => setMenuOpen(false)}

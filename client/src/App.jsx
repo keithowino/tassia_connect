@@ -133,16 +133,12 @@ import {
 } from "react-router-dom";
 import Home from "./pages/Home";
 import { HelmetProvider } from "react-helmet-async";
-// import BusinessProfile from "./pages/BusinessProfile";
-// import Profile from "./pages/Profile";
 // import Orders from "./pages/Orders";
-// import Admin from "./pages/Admin";
 import Layout from "./components/layout/Layout";
 import { useEffect, useState } from "react";
-// import LoadingSpinner from "./components/common/LoadingSpinner";
+import LoadingSpinner from "./components/common/LoadingSpinner";
 // import { CartProvider } from "./lib/context/CartContext";
 // import Checkout from "./pages/Checkout";
-// import BusinessDashboard from "./pages/BusinessDashboard";
 import { AuthProvider } from "./lib/context/AuthContext";
 import { useAuth } from "./lib/context/AuthContext";
 import { DataProvider } from "./lib/context/DataContext";
@@ -151,6 +147,11 @@ import { businessAPI } from "./lib/api";
 import Discovery from "./pages/Discovery";
 import Community from "./pages/Community";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
+import BusinessDashboard from "./pages/BusinessDashboard";
+import BusinessProfile from "./pages/BusinessProfile";
+import { CommonProvider } from "./lib/context/CommonContext";
 
 function DashboardRedirect() {
 	const { user, loading } = useAuth();
@@ -197,22 +198,22 @@ const App = () => {
 		return (
 			<Routes>
 				<Route path="/" element={<Layout />}>
-					{/* <Route path="/admin" element={<Admin />} /> */}
+					<Route path="/admin" element={<Admin />} />
 					<Route path="/auth" element={<Auth />} />
 					<Route index element={<Home />} />
 					<Route path="/discover" element={<Discovery />} />
 					<Route path="/community" element={<Community />} />
-					{/* <Route
+					<Route
 						path="/business/:slug"
 						element={<BusinessProfile />}
-					/> */}
-					{/* <Route path="/profile" element={<Profile />} /> */}
+					/>
+					<Route path="/profile" element={<Profile />} />
 					{/* <Route path="/orders" element={<Orders />} /> */}
-					{/* <Route path="/dashboard" element={<DashboardRedirect />} /> */}
-					{/* <Route
+					<Route path="/dashboard" element={<DashboardRedirect />} />
+					<Route
 						path="/dashboard/:businessId"
 						element={<BusinessDashboard />}
-					/> */}
+					/>
 					{/* <Route
 						path="/checkout/:businessId"
 						element={<Checkout />}
@@ -226,12 +227,14 @@ const App = () => {
 		<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
 			<AuthProvider>
 				<DataProvider>
-					{/* <CartProvider> */}
-					<HelmetProvider>
-						<Router>
-							<AuthenticatedApp />
-						</Router>
-					</HelmetProvider>
+					<CommonProvider>
+						{/* <CartProvider> */}
+						<HelmetProvider>
+							<Router>
+								<AuthenticatedApp />
+							</Router>
+						</HelmetProvider>
+					</CommonProvider>
 				</DataProvider>
 			</AuthProvider>
 		</GoogleOAuthProvider>

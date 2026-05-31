@@ -47,9 +47,11 @@ export const businessAPI = {
 	getAll: () => api.get("/businesses"),
 	getBySlug: (slug) => api.get(`/businesses/slug/${slug}`),
 	getMyBusinesses: () => api.get("/businesses/my"),
+	getById: (id) => api.get(`/businesses/${id}`),
 	create: (data) => api.post("/businesses", data),
 	update: (id, data) => api.put(`/businesses/${id}`, data),
 	delete: (id) => api.delete(`/businesses/${id}`),
+	updateStatus: (id, data) => api.patch(`/businesses/${id}/status`, data),
 };
 
 // Product API
@@ -69,13 +71,49 @@ export const orderAPI = {
 	updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
 };
 
+// // Community API
+// export const communityAPI = {
+// 	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
+// 	getAll: (page = 1, limit = 20) =>
+// 		api
+// 			.get(`/community/posts?page=${page}&limit=${limit}`)
+// 			.catch(() => ({ data: { posts: [], total: 0, pages: 0 } })),
+// 	getByType: (type, page = 1, limit = 20) =>
+// 		api
+// 			.get(`/community/posts?type=${type}&page=${page}&limit=${limit}`)
+// 			.catch(() => ({ data: { posts: [], total: 0, pages: 0 } })),
+// 	getById: (id) => api.get(`/community/posts/${id}`),
+// 	create: (data) => api.post("/community/posts", data),
+// 	update: (id, data) => api.put(`/community/posts/${id}`, data),
+// 	delete: (id) => api.delete(`/community/posts/${id}`),
+// 	togglePin: (id) => api.patch(`/community/posts/${id}/pin`),
+// };
+
 // Community API
 export const communityAPI = {
 	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
-	getAll: (page = 1, limit = 20) =>
-		api.get(`/community/posts?page=${page}&limit=${limit}`),
-	getByType: (type, page = 1, limit = 20) =>
-		api.get(`/community/posts?type=${type}&page=${page}&limit=${limit}`),
+	getAll: async (page = 1, limit = 20) => {
+		try {
+			const response = await api.get(
+				`/community/posts?page=${page}&limit=${limit}`,
+			);
+			// Return the posts array directly for easier consumption
+			return { ...response, data: response.data?.posts || [] };
+		} catch (error) {
+			console.error("Error fetching community posts:", error);
+			return { data: [] };
+		}
+	},
+	getByType: async (type, page = 1, limit = 20) => {
+		try {
+			const response = await api.get(
+				`/community/posts?type=${type}&page=${page}&limit=${limit}`,
+			);
+			return { ...response, data: response.data?.posts || [] };
+		} catch (error) {
+			return { data: [] };
+		}
+	},
 	getById: (id) => api.get(`/community/posts/${id}`),
 	create: (data) => api.post("/community/posts", data),
 	update: (id, data) => api.put(`/community/posts/${id}`, data),
@@ -183,14 +221,39 @@ function getDefaultColorForCategory(category) {
 	return "#6b7280";
 }
 
-// Add to your existing api.js file
-
 // Favorites API
 export const favoritesAPI = {
 	getMyFavorites: () => api.get("/favorites"),
 	addFavorite: (businessId) => api.post("/favorites", { businessId }),
 	removeFavorite: (businessId) => api.delete(`/favorites/${businessId}`),
 	checkFavorite: (businessId) => api.get(`/favorites/check/${businessId}`),
+};
+
+// User API
+export const userAPI = {
+	updateProfile: (data) => api.put("/users/profile", data),
+	getProfile: () => api.get("/users/profile"),
+	getAllUsers: () => api.get("/users"), // Admin only
+};
+
+// Admin API
+export const adminAPI = {
+	getAllUsers: () => api.get("/users"),
+	getStats: () => api.get("/admin/stats"),
+	updateUserRole: (userId, role) =>
+		api.put(`/admin/users/${userId}/role`, { role }),
+};
+
+// Review API
+export const reviewAPI = {
+	getAll: () => api.get("/reviews").catch(() => ({ data: [] })),
+	getByBusiness: (businessId) =>
+		api.get(`/reviews/business/${businessId}`).catch(() => ({
+			data: { reviews: [], averageRating: 0, totalReviews: 0 },
+		})),
+	create: (data) => api.post("/reviews", data),
+	delete: (id) => api.delete(`/reviews/${id}`),
+	update: (id, data) => api.put(`/reviews/${id}`, data),
 };
 
 export default api;

@@ -1,37 +1,108 @@
+// import { Helmet } from "react-helmet-async";
+// import data from "./data";
+
+// const MetaDataInsert = ({ title = data.metadata.name }) => {
+// 	// let pageTitle =
+// 	// 	title === data.metadata.name
+// 	// 		? `${title} - ${data.metadata.parentCompany.name}`
+// 	// 		: `${title} - ${data.metadata.name}`;
+
+// 	let pageTitle =
+// 		title === data.metadata.name
+// 			? `${title} - ${data.metadata.slug}`
+// 			: `${title} - ${data.metadata.name}`;
+
+// 	return (
+// 		<Helmet>
+// 			<title>{pageTitle}</title>
+// 			<meta
+// 				name="description"
+// 				content={`${data.metadata.name} - Community-centric e-commerce and business discovery platform.`}
+// 			/>
+// 			<meta
+// 				name="keywords"
+// 				content="coding, website design, freelancing, software development, ai, llm, tassia, tassia-connect"
+// 			/>
+// 			<meta property="og:title" content={pageTitle} />
+// 			<meta
+// 				property="og:description"
+// 				content="Community-centric e-commerce and business discovery platform."
+// 			/>
+// 			<meta
+// 				property="og:image"
+// 				content="https://raw.githubusercontent.com/keithowino/tassia_connect/refs/heads/main/client/public/site_image.png"
+// 			/>
+// 		</Helmet>
+// 	);
+// };
+
+// export default MetaDataInsert;
+
+// =============================================================
+
 import { Helmet } from "react-helmet-async";
 import data from "./data";
 
-const MetaDataInsert = ({ title = data.metadata.name }) => {
-	// let pageTitle =
-	// 	title === data.metadata.name
-	// 		? `${title} - ${data.metadata.parentCompany.name}`
-	// 		: `${title} - ${data.metadata.name}`;
+const MetaDataInsert = ({
+	title,
+	description,
+	image,
+	keywords,
+	type = "website",
+	url,
+}) => {
+	const { metadata, social } = data;
 
-	let pageTitle =
-		title === data.metadata.name
-			? `${title} - ${data.metadata.slug}`
-			: `${title} - ${data.metadata.name}`;
+	// Determine page title
+	let pageTitle;
+	if (!title || title === metadata.name) {
+		pageTitle = `${metadata.name} - ${metadata.slug}`;
+	} else {
+		pageTitle = `${title} - ${metadata.name}`;
+	}
+
+	const metaDescription = description || metadata.description;
+	const metaImage = image || metadata.image;
+	const metaKeywords = keywords || metadata.keywords;
+	const pageUrl =
+		url ||
+		(typeof window !== "undefined"
+			? window.location.href
+			: metadata.liveLink);
 
 	return (
 		<Helmet>
+			{/* Basic Metadata */}
 			<title>{pageTitle}</title>
+			<meta name="description" content={metaDescription} />
+			<meta name="keywords" content={metaKeywords} />
+			<meta name="author" content={metadata.author} />
 			<meta
-				name="description"
-				content={`${data.metadata.name} - Community-centric e-commerce and business discovery platform.`}
+				name="viewport"
+				content="width=device-width, initial-scale=1.0"
 			/>
-			<meta
-				name="keywords"
-				content="coding, website design, freelancing, software development, ai, llm, tassia, tassia-connect"
-			/>
+
+			{/* Open Graph / Facebook */}
+			<meta property="og:type" content={type} />
 			<meta property="og:title" content={pageTitle} />
-			<meta
-				property="og:description"
-				content="Community-centric e-commerce and business discovery platform."
-			/>
-			<meta
-				property="og:image"
-				content="https://raw.githubusercontent.com/keithowino/tassia_connect/refs/heads/main/client/public/site_image.png"
-			/>
+			<meta property="og:description" content={metaDescription} />
+			<meta property="og:image" content={metaImage} />
+			<meta property="og:url" content={pageUrl} />
+			<meta property="og:site_name" content={metadata.name} />
+			<meta property="og:locale" content="en_KE" />
+
+			{/* Twitter Card */}
+			<meta name="twitter:card" content="summary_large_image" />
+			<meta name="twitter:title" content={pageTitle} />
+			<meta name="twitter:description" content={metaDescription} />
+			<meta name="twitter:image" content={metaImage} />
+			<meta name="twitter:site" content={social.twitter} />
+			<meta name="twitter:creator" content={social.twitter} />
+
+			{/* Additional SEO */}
+			<link rel="canonical" href={pageUrl} />
+			<meta name="robots" content="index, follow" />
+			<meta name="theme-color" content="#f97316" />
 		</Helmet>
 	);
 };

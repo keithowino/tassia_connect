@@ -684,6 +684,7 @@ import {
 import { useState } from "react";
 import { useAuth } from "../lib/context/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
+import data from "../lib/data";
 
 const Auth = () => {
 	const [tab, setTab] = useState("signin");
@@ -801,6 +802,11 @@ const Auth = () => {
 		<>
 			<MetaDataInsert
 				title={tab === "signin" ? "Sign In" : "Create Account"}
+				description={`${
+					tab === "signin"
+						? `Sign in to your ${data.metadata.name} account to order food, save favorites, and manage your business.`
+						: `Create a free ${data.metadata.name} account to discover local businesses, place orders, and join the community.`
+				}`}
 			/>
 			<section className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center px-4 py-8">
 				<div className="w-full max-w-md">

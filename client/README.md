@@ -1,3 +1,20 @@
+<!-- Product page -->
+
+<MetaDataInsert 
+	title={product.name}
+	description={product.description}
+	image={product.image_url}
+	type="product"
+/>
+
+<!-- custom -->
+
+<MetaDataInsert 
+	title="Special Offer"
+	description="Limited time discount on local businesses!"
+	keywords="deals, discounts, offers, tassia"
+/>
+
 Next Steps (After This Migration)
 Payment Integration (Daraja 3.0)
 
