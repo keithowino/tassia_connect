@@ -15,26 +15,14 @@
 // 	Wrench,
 // 	Plus,
 // 	Check,
+// 	Share2,
 // } from "lucide-react";
-// import { db } from "../lib/firebase.config";
-// import {
-// 	collection,
-// 	query,
-// 	where,
-// 	getDocs,
-// 	getDoc,
-// 	doc,
-// 	addDoc,
-// 	updateDoc,
-// 	deleteDoc,
-// 	orderBy,
-// 	limit,
-// } from "firebase/firestore";
 // import { useAuth } from "../lib/context/AuthContext";
 // import { useCart } from "../lib/context/CartContext";
+// import { businessAPI, productAPI, reviewAPI, favoritesAPI } from "../lib/api";
 // import StarRating from "../components/common/StarRating";
 // import LoadingSpinner from "../components/common/LoadingSpinner";
-// import { increment } from "firebase/firestore";
+// import MetaDataInsert from "../lib/MetaDataInsert";
 
 // export default function BusinessProfile() {
 // 	const { slug } = useParams();
@@ -47,332 +35,150 @@
 // 	const [reviewForm, setReviewForm] = useState({ rating: 0, comment: "" });
 // 	const [submittingReview, setSubmittingReview] = useState(false);
 // 	const [addedItems, setAddedItems] = useState(new Set());
+// 	const [showShareMenu, setShowShareMenu] = useState(false);
 
 // 	const { user } = useAuth();
-// 	const { addItem } = useCart();
+// 	// const { addItem } = useCart();
 
 // 	useEffect(() => {
 // 		if (!slug) return;
 
-// 		const fetchBusiness = async () => {
+// 		const fetchBusinessData = async () => {
 // 			setLoading(true);
 // 			try {
-// 				console.log("Fetching business with slug:", slug);
+// 				// Fetch business by slug
+// 				const businessRes = await businessAPI.getBySlug(slug);
+// 				const businessData = businessRes.data;
 
-// 				// Fetch business by slug - DON'T filter by status here
-// 				const businessesQuery = query(
-// 					collection(db, "businesses"),
-// 					where("slug", "==", slug),
-// 					limit(1),
-// 				);
-// 				const businessesSnapshot = await getDocs(businessesQuery);
-
-// 				if (businessesSnapshot.empty) {
-// 					console.log("No business found with slug:", slug);
+// 				// Check if business is active/verified
+// 				if (!businessData.isActive && !businessData.isVerified) {
+// 					setBusiness(null);
 // 					setLoading(false);
 // 					return;
 // 				}
 
-// 				const businessDoc = businessesSnapshot.docs[0];
-// 				const businessData = {
-// 					id: businessDoc.id,
-// 					...businessDoc.data(),
-// 				};
-// 				console.log(
-// 					"Business found:",
-// 					businessData.name,
-// 					"Status:",
-// 					businessData.status,
-// 				);
-
-// 				// Fetch category if exists
-// 				if (businessData.category_id) {
-// 					try {
-// 						const categoryRef = doc(
-// 							db,
-// 							"categories",
-// 							businessData.category_id,
-// 						);
-// 						const categoryDoc = await getDoc(categoryRef);
-// 						if (categoryDoc.exists()) {
-// 							businessData.categories = {
-// 								id: categoryDoc.id,
-// 								...categoryDoc.data(),
-// 							};
-// 						}
-// 					} catch (catError) {
-// 						console.error("Error fetching category:", catError);
-// 					}
-// 				}
-
-// 				// Fetch owner profile
-// 				if (businessData.owner_id) {
-// 					try {
-// 						const ownerRef = doc(
-// 							db,
-// 							"profiles",
-// 							businessData.owner_id,
-// 						);
-// 						const ownerDoc = await getDoc(ownerRef);
-// 						if (ownerDoc.exists()) {
-// 							businessData.profiles = {
-// 								id: ownerDoc.id,
-// 								...ownerDoc.data(),
-// 							};
-// 						} else {
-// 							businessData.profiles = {
-// 								full_name: "Business Owner",
-// 							};
-// 						}
-// 					} catch (profileError) {
-// 						console.error(
-// 							"Error fetching owner profile:",
-// 							profileError,
-// 						);
-// 						businessData.profiles = { full_name: "Business Owner" };
-// 					}
-// 				}
-
 // 				setBusiness(businessData);
 
-// 				try {
-// 					const businessRef = doc(db, "businesses", businessDoc.id);
-// 					updateDoc(businessRef, {
-// 						view_count: increment(1),
-// 					}).catch((e) =>
-// 						console.warn("View count update failed:", e.message),
-// 					);
-// 				} catch (updateError) {
-// 					console.warn("View count update skipped");
-// 				}
-
-// 				// Fetch products (don't filter by available if not needed)
-// 				try {
-// 					const productsQuery = query(
-// 						collection(db, "products_services"),
-// 						where("business_id", "==", businessDoc.id),
-// 						orderBy("sort_order"),
-// 					);
-// 					const productsSnapshot = await getDocs(productsQuery);
-// 					const productsData = productsSnapshot.docs.map((doc) => ({
-// 						id: doc.id,
-// 						...doc.data(),
-// 					}));
-// 					setProducts(productsData);
-// 				} catch (prodError) {
-// 					console.error("Error fetching products:", prodError);
-// 					setProducts([]);
-// 				}
+// 				// Fetch products
+// 				const productsRes = await productAPI.getByBusiness(
+// 					businessData._id,
+// 				);
+// 				setProducts(productsRes.data || []);
 
 // 				// Fetch reviews
-// 				try {
-// 					const reviewsQuery = query(
-// 						collection(db, "reviews"),
-// 						where("business_id", "==", businessDoc.id),
-// 						orderBy("created_at", "desc"),
-// 					);
-// 					const reviewsSnapshot = await getDocs(reviewsQuery);
-// 					const reviewsData = [];
-
-// 					for (const reviewDoc of reviewsSnapshot.docs) {
-// 						const reviewData = {
-// 							id: reviewDoc.id,
-// 							...reviewDoc.data(),
-// 						};
-
-// 						// Fetch user profile for review
-// 						if (reviewData.user_id) {
-// 							try {
-// 								const userRef = doc(
-// 									db,
-// 									"profiles",
-// 									reviewData.user_id,
-// 								);
-// 								const userDoc = await getDoc(userRef);
-// 								if (userDoc.exists()) {
-// 									reviewData.profiles = {
-// 										id: userDoc.id,
-// 										...userDoc.data(),
-// 									};
-// 								}
-// 							} catch (userError) {
-// 								console.error(
-// 									"Error fetching review user profile:",
-// 									userError,
-// 								);
-// 							}
-// 						}
-
-// 						reviewsData.push(reviewData);
-// 					}
-// 					setReviews(reviewsData);
-// 				} catch (revError) {
-// 					console.error("Error fetching reviews:", revError);
-// 					setReviews([]);
-// 				}
+// 				const reviewsRes = await reviewAPI.getByBusiness(
+// 					businessData._id,
+// 				);
+// 				setReviews(reviewsRes.data?.reviews || []);
 
 // 				// Check if favorited
 // 				if (user) {
 // 					try {
-// 						const favoritesQuery = query(
-// 							collection(db, "favorites"),
-// 							where("user_id", "==", user.uid),
-// 							where("business_id", "==", businessDoc.id),
-// 							limit(1),
+// 						const favCheck = await favoritesAPI.checkFavorite(
+// 							businessData._id,
 // 						);
-// 						const favoritesSnapshot = await getDocs(favoritesQuery);
-// 						setIsFavorited(!favoritesSnapshot.empty);
-// 					} catch (favError) {
-// 						console.error("Error checking favorite:", favError);
+// 						setIsFavorited(favCheck.data.isFavorited);
+// 					} catch (err) {
+// 						console.log("Favorite check failed:", err);
 // 						setIsFavorited(false);
 // 					}
 // 				}
 // 			} catch (error) {
 // 				console.error("Error fetching business:", error);
-// 				console.error("Error code:", error.code);
-// 				console.error("Error message:", error.message);
+// 				if (error.response?.status === 404) {
+// 					setBusiness(null);
+// 				}
 // 			} finally {
 // 				setLoading(false);
 // 			}
 // 		};
 
-// 		fetchBusiness();
+// 		fetchBusinessData();
 // 	}, [slug, user]);
 
 // 	const toggleFavorite = async () => {
 // 		if (!user || !business) {
-// 			console.log("Cannot toggle favorite: No user or business", {
-// 				user: !!user,
-// 				business: !!business,
-// 			});
+// 			alert("Please login to save favorites");
 // 			return;
 // 		}
 
 // 		try {
-// 			console.log(
-// 				"Toggling favorite for user:",
-// 				user.uid,
-// 				"business:",
-// 				business.id,
-// 			);
-
 // 			if (isFavorited) {
-// 				// Find and delete favorite
-// 				const favoritesQuery = query(
-// 					collection(db, "favorites"),
-// 					where("user_id", "==", user.uid),
-// 					where("business_id", "==", business.id),
-// 					limit(1),
-// 				);
-// 				const favoritesSnapshot = await getDocs(favoritesQuery);
-// 				if (!favoritesSnapshot.empty) {
-// 					const favDoc = favoritesSnapshot.docs[0];
-// 					await deleteDoc(doc(db, "favorites", favDoc.id));
-// 					console.log("Favorite removed");
-// 				}
+// 				await favoritesAPI.removeFavorite(business._id);
+// 				setIsFavorited(false);
 // 			} else {
-// 				// Add favorite
-// 				await addDoc(collection(db, "favorites"), {
-// 					user_id: user.uid,
-// 					business_id: business.id,
-// 					created_at: new Date().toISOString(),
-// 				});
-// 				console.log("Favorite added");
+// 				await favoritesAPI.addFavorite(business._id);
+// 				setIsFavorited(true);
 // 			}
-// 			setIsFavorited(!isFavorited);
 // 		} catch (error) {
 // 			console.error("Error toggling favorite:", error);
-// 			console.error("Error code:", error.code);
-// 			console.error("Error message:", error.message);
 // 			alert("Could not save favorite. Please try again.");
 // 		}
 // 	};
 
-// 	const handleAddToCart = (product) => {
-// 		if (!business) return;
-// 		addItem(product, business.id, business.name);
-// 		setAddedItems((prev) => new Set([...prev, product.id]));
-// 		setTimeout(() => {
-// 			setAddedItems((prev) => {
-// 				const newSet = new Set(prev);
-// 				newSet.delete(product.id);
-// 				return newSet;
-// 			});
-// 		}, 2000);
-// 	};
+// 	// const handleAddToCart = (product) => {
+// 	// 	if (!business) return;
+// 	// 	addItem(product, business._id, business.businessName);
+// 	// 	setAddedItems((prev) => new Set([...prev, product._id]));
+// 	// 	setTimeout(() => {
+// 	// 		setAddedItems((prev) => {
+// 	// 			const newSet = new Set(prev);
+// 	// 			newSet.delete(product._id);
+// 	// 			return newSet;
+// 	// 		});
+// 	// 	}, 2000);
+// 	// };
 
 // 	const handleSubmitReview = async () => {
-// 		if (!user || !business || reviewForm.rating === 0) return;
+// 		if (!user || !business || reviewForm.rating === 0) {
+// 			alert("Please select a rating and login to review");
+// 			return;
+// 		}
+
 // 		setSubmittingReview(true);
 
 // 		try {
-// 			// Check if user already reviewed this business
-// 			const existingReviewQuery = query(
-// 				collection(db, "reviews"),
-// 				where("business_id", "==", business.id),
-// 				where("user_id", "==", user.uid),
-// 				limit(1),
-// 			);
-// 			const existingReviewSnapshot = await getDocs(existingReviewQuery);
-
-// 			let reviewData;
-// 			if (!existingReviewSnapshot.empty) {
-// 				// Update existing review
-// 				const reviewId = existingReviewSnapshot.docs[0].id;
-// 				const reviewRef = doc(db, "reviews", reviewId);
-// 				await updateDoc(reviewRef, {
-// 					rating: reviewForm.rating,
-// 					comment: reviewForm.comment,
-// 					updated_at: new Date().toISOString(),
-// 				});
-// 				reviewData = {
-// 					id: reviewId,
-// 					...existingReviewSnapshot.docs[0].data(),
-// 					...reviewForm,
-// 				};
-// 			} else {
-// 				// Create new review
-// 				const docRef = await addDoc(collection(db, "reviews"), {
-// 					business_id: business.id,
-// 					user_id: user.uid,
-// 					rating: reviewForm.rating,
-// 					comment: reviewForm.comment,
-// 					created_at: new Date().toISOString(),
-// 				});
-// 				reviewData = {
-// 					id: docRef.id,
-// 					...reviewForm,
-// 					user_id: user.uid,
-// 				};
-// 			}
-
-// 			// Fetch user profile for the new review
-// 			try {
-// 				const userRef = doc(db, "profiles", user.uid);
-// 				const userDoc = await getDoc(userRef);
-// 				if (userDoc.exists()) {
-// 					reviewData.profiles = { id: userDoc.id, ...userDoc.data() };
-// 				}
-// 			} catch (profileError) {
-// 				console.error(
-// 					"Error fetching user profile for review:",
-// 					profileError,
-// 				);
-// 			}
-
-// 			// Update reviews list
-// 			setReviews((prev) => {
-// 				const filtered = prev.filter((r) => r.user_id !== user.uid);
-// 				return [reviewData, ...filtered];
+// 			const response = await reviewAPI.create({
+// 				businessId: business._id,
+// 				rating: reviewForm.rating,
+// 				comment: reviewForm.comment,
 // 			});
 
+// 			// Add new review to list
+// 			const newReview = response.data;
+// 			setReviews((prev) => [newReview, ...prev]);
 // 			setReviewForm({ rating: 0, comment: "" });
+
+// 			// Refresh business to update rating
+// 			const updatedBusiness = await businessAPI.getBySlug(slug);
+// 			setBusiness(updatedBusiness.data);
 // 		} catch (error) {
 // 			console.error("Error submitting review:", error);
-// 			alert("Failed to submit review. Please try again.");
+// 			if (error.response?.status === 400) {
+// 				alert("You have already reviewed this business");
+// 			} else {
+// 				alert("Failed to submit review. Please try again.");
+// 			}
 // 		} finally {
 // 			setSubmittingReview(false);
 // 		}
+// 	};
+
+// 	const shareBusiness = () => {
+// 		const url = window.location.href;
+// 		if (navigator.share) {
+// 			navigator
+// 				.share({
+// 					title: business?.businessName,
+// 					text: `Check out ${business?.businessName} on Tassia Connect!`,
+// 					url: url,
+// 				})
+// 				.catch(() => console.log("Share cancelled"));
+// 		} else {
+// 			navigator.clipboard.writeText(url);
+// 			alert("Link copied to clipboard!");
+// 		}
+// 		setShowShareMenu(false);
 // 	};
 
 // 	const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -388,460 +194,637 @@
 
 // 	if (!business) {
 // 		return (
-// 			<div className="text-center py-20">
-// 				<p className="text-gray-500 text-lg">Business not found</p>
-// 				<Link
-// 					to="/discover"
-// 					className="mt-4 inline-block text-orange-500 font-medium"
-// 				>
-// 					Browse businesses
-// 				</Link>
-// 			</div>
+// 			<>
+// 				<MetaDataInsert title="Invalid business search" />
+
+// 				<section className="text-center py-20 px-4">
+// 					<div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+// 						<Store size={32} className="text-gray-400" />
+// 					</div>
+// 					<p className="text-gray-500 text-lg font-medium">
+// 						Business not found
+// 					</p>
+// 					<p className="text-gray-400 text-sm mt-1">
+// 						The business you're looking for doesn't exist or is
+// 						unavailable
+// 					</p>
+// 					<Link
+// 						to="/discover"
+// 						className="mt-6 inline-block bg-orange-500 text-white px-6 py-2.5 rounded-full font-medium hover:bg-orange-600 transition-colors"
+// 					>
+// 						Browse Businesses
+// 					</Link>
+// 				</section>
+// 			</>
 // 		);
 // 	}
 
 // 	const coverImage =
+// 		business.coverImage ||
 // 		business.cover_image ||
 // 		`https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800`;
+// 	const businessName = business.businessName || business.name;
+// 	const averageRating =
+// 		business.averageRating || business.average_rating || 0;
+// 	const reviewCount = business.reviewCount || reviews.length;
+// 	const isOpen = business.open_days?.includes(today);
 
 // 	return (
-// 		<div className="max-w-3xl mx-auto">
-// 			{/* Cover */}
-// 			<div className="relative h-52 md:h-72">
-// 				<img
-// 					src={coverImage}
-// 					alt={business.name}
-// 					className="w-full h-full object-cover"
-// 				/>
-// 				<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-// 				<Link
-// 					to="/discover"
-// 					className="absolute top-4 left-4 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
-// 				>
-// 					<ChevronLeft size={20} className="text-gray-700" />
-// 				</Link>
-// 				{user && (
-// 					<button
-// 						onClick={toggleFavorite}
-// 						className="absolute top-4 right-4 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+// 		<>
+// 			<MetaDataInsert
+// 				title={business.businessName}
+// 				description={
+// 					business.description ||
+// 					`Visit ${business.businessName} at ${business.location?.label || "Tassia Complex"}. ${business.tagline || "Local business serving the community."}`
+// 				}
+// 				image={business.coverImage || business.cover_image}
+// 				type="business"
+// 				url={`https://tassia-connect.vercel.app/business/${business.slug}`}
+// 			/>
+
+// 			<section className="max-w-3xl mx-auto pb-20">
+// 				{/* Cover Image */}
+// 				<div className="relative h-52 md:h-72">
+// 					<img
+// 						src={coverImage}
+// 						alt={businessName}
+// 						className="w-full h-full object-cover"
+// 					/>
+// 					<div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+// 					{/* Back Button */}
+// 					<Link
+// 						to="/discover"
+// 						className="absolute top-4 left-4 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all hover:scale-105"
+// 						aria-label="Go back"
 // 					>
-// 						<Heart
-// 							size={20}
-// 							className={
-// 								isFavorited
-// 									? "fill-red-500 text-red-500"
-// 									: "text-gray-700"
-// 							}
-// 						/>
-// 					</button>
-// 				)}
-// 				<div className="absolute bottom-10 left-4 right-4">
-// 					<h1 className="text-2xl font-extrabold text-white">
-// 						{business.name}
-// 					</h1>
-// 					{business.tagline && (
-// 						<p className="text-white/80 text-sm">
-// 							{business.tagline}
-// 						</p>
-// 					)}
-// 				</div>
-// 			</div>
+// 						<ChevronLeft size={20} className="text-gray-700" />
+// 					</Link>
 
-// 			{/* Rest of the component remains the same */}
-// 			<div className="px-4 pb-8">
-// 				{/* Quick Info */}
-// 				<div className="bg-white rounded-2xl -mt-6 relative shadow-md p-4 mb-4">
-// 					<div className="flex items-start justify-between gap-4">
-// 						<div className="space-y-1.5">
-// 							{business.categories && (
-// 								<span
-// 									className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-// 									style={{
-// 										backgroundColor:
-// 											business.categories.color ||
-// 											"#f97316",
-// 									}}
-// 								>
-// 									{business.categories.name}
-// 								</span>
-// 							)}
-// 							<div className="flex items-center gap-2">
-// 								<StarRating
-// 									rating={business.average_rating || 0}
-// 									size={16}
-// 								/>
-// 								<span className="font-bold text-gray-800">
-// 									{business.average_rating > 0
-// 										? business.average_rating.toFixed(1)
-// 										: "No ratings"}
-// 								</span>
-// 								<span className="text-gray-400 text-sm">
-// 									({business.review_count || 0} reviews)
-// 								</span>
-// 							</div>
-// 							<div className="flex items-center gap-1.5 text-sm text-gray-500">
-// 								<MapPin size={14} className="text-orange-500" />
-// 								<span>
-// 									{business.location_label}
-// 									{business.floor_unit
-// 										? `, ${business.floor_unit}`
-// 										: ""}
-// 								</span>
-// 							</div>
-// 							<div className="flex items-center gap-1.5 text-sm text-gray-500">
-// 								<Clock size={14} className="text-green-500" />
-// 								<span>
-// 									{business.opening_time} –{" "}
-// 									{business.closing_time}
-// 								</span>
-// 							</div>
-// 						</div>
-// 						<div className="flex flex-col gap-2">
-// 							{business.phone && (
-// 								<a
-// 									href={`tel:${business.phone}`}
-// 									className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors"
-// 								>
-// 									<Phone size={14} /> Call
-// 								</a>
-// 							)}
-// 							{business.whatsapp && (
-// 								<a
-// 									href={`https://wa.me/${business.whatsapp.replace(/\D/g, "")}`}
-// 									target="_blank"
-// 									rel="noopener noreferrer"
-// 									className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors"
-// 								>
-// 									<MessageCircle size={14} /> WhatsApp
-// 								</a>
-// 							)}
-// 						</div>
-// 					</div>
-// 					{business.delivery_available && (
-// 						<div className="mt-3 flex items-center gap-2 bg-blue-50 rounded-xl p-2.5">
-// 							<ShoppingCart size={16} className="text-blue-500" />
-// 							<span className="text-sm text-blue-700 font-medium">
-// 								Delivery available · KES{" "}
-// 								{business.delivery_fee || 0} fee
-// 							</span>
-// 							{business.min_order > 0 && (
-// 								<span className="text-xs text-blue-500">
-// 									Min order: KES {business.min_order}
-// 								</span>
-// 							)}
-// 						</div>
-// 					)}
-// 				</div>
-
-// 				{/* Tabs */}
-// 				<div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-4">
-// 					{["menu", "reviews", "info"].map((tab) => (
+// 					{/* Action Buttons */}
+// 					<div className="absolute top-4 right-4 flex gap-2">
 // 						<button
-// 							key={tab}
-// 							onClick={() => setActiveTab(tab)}
-// 							className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${
-// 								activeTab === tab
-// 									? "bg-white text-gray-900 shadow-sm"
-// 									: "text-gray-500 hover:text-gray-700"
-// 							}`}
+// 							onClick={shareBusiness}
+// 							className="p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all hover:scale-105"
+// 							aria-label="Share business"
 // 						>
-// 							{tab === "menu" ? "Menu & Services" : tab}
+// 							<Share2 size={20} className="text-gray-700" />
 // 						</button>
-// 					))}
+
+// 						{user && (
+// 							<button
+// 								onClick={toggleFavorite}
+// 								className="p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all hover:scale-105"
+// 								aria-label={
+// 									isFavorited
+// 										? "Remove from favorites"
+// 										: "Add to favorites"
+// 								}
+// 							>
+// 								<Heart
+// 									size={20}
+// 									className={
+// 										isFavorited
+// 											? "fill-red-500 text-red-500"
+// 											: "text-gray-700"
+// 									}
+// 								/>
+// 							</button>
+// 						)}
+// 					</div>
+
+// 					{/* Business Name */}
+// 					<div className="absolute bottom-6 left-4 right-4">
+// 						<h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-lg">
+// 							{businessName}
+// 						</h1>
+// 						{business.tagline && (
+// 							<p className="text-white/90 text-sm mt-1 drop-shadow">
+// 								{business.tagline}
+// 							</p>
+// 						)}
+// 					</div>
 // 				</div>
 
-// 				{/* Tab Content */}
-// 				{activeTab === "menu" && (
-// 					<div className="space-y-3">
-// 						{products.length === 0 ? (
-// 							<div className="text-center py-10 bg-white rounded-2xl border border-gray-100">
-// 								<p className="text-gray-500">
-// 									No products or services listed yet.
-// 								</p>
+// 				{/* Main Content */}
+// 				<div className="px-4 -mt-6 relative">
+// 					{/* Quick Info Card */}
+// 					<div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
+// 						<div className="flex flex-wrap items-start justify-between gap-3">
+// 							<div className="space-y-2">
+// 								{/* Category Badge */}
+// 								{business.category && (
+// 									<span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full text-white bg-orange-500">
+// 										{business.category}
+// 									</span>
+// 								)}
+
+// 								{/* Rating */}
+// 								<div className="flex items-center gap-2">
+// 									<StarRating
+// 										rating={averageRating}
+// 										size={16}
+// 									/>
+// 									<span className="font-bold text-gray-800">
+// 										{averageRating > 0
+// 											? averageRating.toFixed(1)
+// 											: "No ratings"}
+// 									</span>
+// 									<span className="text-gray-400 text-sm">
+// 										({reviewCount}{" "}
+// 										{reviewCount === 1
+// 											? "review"
+// 											: "reviews"}
+// 										)
+// 									</span>
+// 								</div>
+
+// 								{/* Location */}
+// 								<div className="flex items-center gap-1.5 text-sm text-gray-600">
+// 									<MapPin
+// 										size={14}
+// 										className="text-orange-500 shrink-0"
+// 									/>
+// 									<span>
+// 										{business.location?.label ||
+// 											business.location_label ||
+// 											"Location"}
+// 										{business.location?.floor_unit &&
+// 											`, ${business.location.floor_unit}`}
+// 									</span>
+// 								</div>
+
+// 								{/* Hours */}
+// 								<div className="flex items-center gap-1.5 text-sm">
+// 									<Clock
+// 										size={14}
+// 										className={
+// 											isOpen
+// 												? "text-green-500"
+// 												: "text-red-500"
+// 										}
+// 									/>
+// 									<span
+// 										className={
+// 											isOpen
+// 												? "text-green-600 font-medium"
+// 												: "text-gray-500"
+// 										}
+// 									>
+// 										{isOpen ? "Open now" : "Closed"} ·{" "}
+// 										{business.opening_time || "N/A"} –{" "}
+// 										{business.closing_time || "N/A"}
+// 									</span>
+// 								</div>
 // 							</div>
-// 						) : (
-// 							<>
-// 								{["product", "service"].map((type) => {
-// 									const items = products.filter(
-// 										(p) => p.type === type,
-// 									);
-// 									if (items.length === 0) return null;
-// 									return (
-// 										<div key={type}>
-// 											<h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide flex items-center gap-2 mb-2">
-// 												{type === "product" ? (
-// 													<Package size={14} />
-// 												) : (
-// 													<Wrench size={14} />
-// 												)}
-// 												{type === "product"
-// 													? "Products"
-// 													: "Services"}
-// 											</h3>
-// 											<div className="space-y-2">
-// 												{items.map((item) => (
-// 													<div
-// 														key={item.id}
-// 														className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3"
-// 													>
-// 														{item.image_url && (
-// 															<img
-// 																src={
-// 																	item.image_url
-// 																}
-// 																alt={item.name}
-// 																className="w-14 h-14 rounded-lg object-cover shrink-0"
-// 															/>
-// 														)}
-// 														<div className="flex-1 min-w-0">
-// 															<p className="font-semibold text-gray-900 text-sm">
-// 																{item.name}
-// 															</p>
-// 															{item.description && (
-// 																<p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-// 																	{
-// 																		item.description
-// 																	}
-// 																</p>
-// 															)}
-// 															<p className="font-bold text-orange-500 text-base mt-1">
-// 																KES{" "}
-// 																{item.price.toLocaleString()}
-// 															</p>
-// 														</div>
-// 														<button
-// 															onClick={() =>
-// 																handleAddToCart(
-// 																	item,
-// 																)
-// 															}
-// 															className={`shrink-0 p-2 rounded-xl transition-all ${
-// 																addedItems.has(
-// 																	item.id,
-// 																)
-// 																	? "bg-green-500 text-white"
-// 																	: "bg-orange-500 text-white hover:bg-orange-600"
-// 															}`}
+
+// 							{/* Contact Buttons */}
+// 							<div className="flex gap-2">
+// 								{business.phone && (
+// 									<a
+// 										href={`tel:${business.phone}`}
+// 										className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors"
+// 									>
+// 										<Phone size={14} /> Call
+// 									</a>
+// 								)}
+// 								{business.whatsapp && (
+// 									<a
+// 										href={`https://wa.me/${business.whatsapp.replace(/\D/g, "")}`}
+// 										target="_blank"
+// 										rel="noopener noreferrer"
+// 										className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors"
+// 									>
+// 										<MessageCircle size={14} /> WhatsApp
+// 									</a>
+// 								)}
+// 							</div>
+// 						</div>
+
+// 						{/* Delivery Info */}
+// 						{business.delivery_available && (
+// 							<div className="mt-3 flex flex-wrap items-center gap-2 bg-blue-50 rounded-xl p-2.5">
+// 								<ShoppingCart
+// 									size={16}
+// 									className="text-blue-500"
+// 								/>
+// 								<span className="text-sm text-blue-700 font-medium">
+// 									Delivery available
+// 								</span>
+// 								{business.delivery_fee > 0 && (
+// 									<span className="text-sm text-blue-600">
+// 										· KES {business.delivery_fee} fee
+// 									</span>
+// 								)}
+// 								{business.min_order > 0 && (
+// 									<span className="text-xs text-blue-500 ml-auto">
+// 										Min order: KES {business.min_order}
+// 									</span>
+// 								)}
+// 							</div>
+// 						)}
+// 					</div>
+
+// 					{/* Tabs */}
+// 					<div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-4">
+// 						{[
+// 							{
+// 								id: "menu",
+// 								label: "Menu & Services",
+// 								icon: Package,
+// 							},
+// 							{ id: "reviews", label: "Reviews", icon: Star },
+// 							{ id: "info", label: "Info", icon: MapPin },
+// 						].map((tab) => (
+// 							<button
+// 								key={tab.id}
+// 								onClick={() => setActiveTab(tab.id)}
+// 								className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${
+// 									activeTab === tab.id
+// 										? "bg-white text-gray-900 shadow-sm"
+// 										: "text-gray-500 hover:text-gray-700"
+// 								}`}
+// 							>
+// 								<tab.icon size={14} />
+// 								{tab.label}
+// 							</button>
+// 						))}
+// 					</div>
+
+// 					{/* Menu Tab */}
+// 					{activeTab === "menu" && (
+// 						<div className="space-y-4">
+// 							{products.length === 0 ? (
+// 								<div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+// 									<Package
+// 										size={48}
+// 										className="text-gray-300 mx-auto mb-3"
+// 									/>
+// 									<p className="text-gray-500 font-medium">
+// 										No products or services listed yet
+// 									</p>
+// 									<p className="text-sm text-gray-400 mt-1">
+// 										Check back later for updates!
+// 									</p>
+// 								</div>
+// 							) : (
+// 								<>
+// 									{/* Group by category or type */}
+// 									{["product", "service"].map((type) => {
+// 										const items = products.filter(
+// 											(p) => p.type === type,
+// 										);
+// 										if (items.length === 0) return null;
+
+// 										return (
+// 											<div key={type}>
+// 												<h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide flex items-center gap-2 mb-3">
+// 													{type === "product" ? (
+// 														<Package
+// 															size={14}
+// 															className="text-orange-500"
+// 														/>
+// 													) : (
+// 														<Wrench
+// 															size={14}
+// 															className="text-orange-500"
+// 														/>
+// 													)}
+// 													{type === "product"
+// 														? "Products"
+// 														: "Services"}
+// 												</h3>
+// 												<div className="space-y-2">
+// 													{items.map((item) => (
+// 														<div
+// 															key={item._id}
+// 															className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3 hover:shadow-sm transition-shadow"
 // 														>
-// 															{addedItems.has(
-// 																item.id,
-// 															) ? (
-// 																<Check
-// 																	size={18}
-// 																/>
-// 															) : (
-// 																<Plus
-// 																	size={18}
+// 															{item.image_url && (
+// 																<img
+// 																	src={
+// 																		item.image_url
+// 																	}
+// 																	alt={
+// 																		item.name
+// 																	}
+// 																	className="w-14 h-14 rounded-lg object-cover shrink-0"
 // 																/>
 // 															)}
-// 														</button>
-// 													</div>
-// 												))}
+// 															<div className="flex-1 min-w-0">
+// 																<p className="font-semibold text-gray-900 text-sm">
+// 																	{item.name}
+// 																</p>
+// 																{item.description && (
+// 																	<p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+// 																		{
+// 																			item.description
+// 																		}
+// 																	</p>
+// 																)}
+// 																<p className="font-bold text-orange-500 text-base mt-1">
+// 																	KES{" "}
+// 																	{item.price.toLocaleString()}
+// 																</p>
+// 															</div>
+// 															<button
+// 																// onClick={() =>
+// 																// 	handleAddToCart(
+// 																// 		item,
+// 																// 	)
+// 																// }
+// 																className={`shrink-0 p-2 rounded-xl transition-all ${
+// 																	addedItems.has(
+// 																		item._id,
+// 																	)
+// 																		? "bg-green-500 text-white"
+// 																		: "bg-orange-500 text-white hover:bg-orange-600"
+// 																}`}
+// 																aria-label="Add to cart"
+// 															>
+// 																{addedItems.has(
+// 																	item._id,
+// 																) ? (
+// 																	<Check
+// 																		size={
+// 																			18
+// 																		}
+// 																	/>
+// 																) : (
+// 																	<Plus
+// 																		size={
+// 																			18
+// 																		}
+// 																	/>
+// 																)}
+// 															</button>
+// 														</div>
+// 													))}
+// 												</div>
+// 											</div>
+// 										);
+// 									})}
+// 								</>
+// 							)}
+// 						</div>
+// 					)}
+
+// 					{/* Reviews Tab */}
+// 					{activeTab === "reviews" && (
+// 						<div className="space-y-4">
+// 							{/* Review Form */}
+// 							{user && (
+// 								<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+// 									<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+// 										<Star
+// 											size={18}
+// 											className="text-orange-500"
+// 										/>
+// 										Write a Review
+// 									</h3>
+// 									<StarRating
+// 										rating={reviewForm.rating}
+// 										size={28}
+// 										interactive
+// 										onChange={(r) =>
+// 											setReviewForm((prev) => ({
+// 												...prev,
+// 												rating: r,
+// 											}))
+// 										}
+// 									/>
+// 									<textarea
+// 										value={reviewForm.comment}
+// 										onChange={(e) =>
+// 											setReviewForm((prev) => ({
+// 												...prev,
+// 												comment: e.target.value,
+// 											}))
+// 										}
+// 										placeholder="Share your experience with this business..."
+// 										rows={3}
+// 										className="w-full mt-3 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+// 									/>
+// 									<button
+// 										onClick={handleSubmitReview}
+// 										disabled={
+// 											reviewForm.rating === 0 ||
+// 											submittingReview
+// 										}
+// 										className="mt-2 bg-orange-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+// 									>
+// 										{submittingReview
+// 											? "Submitting..."
+// 											: "Submit Review"}
+// 									</button>
+// 								</div>
+// 							)}
+
+// 							{/* Reviews List */}
+// 							{reviews.length === 0 ? (
+// 								<div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+// 									<Star
+// 										size={48}
+// 										className="text-gray-300 mx-auto mb-3"
+// 									/>
+// 									<p className="text-gray-500 font-medium">
+// 										No reviews yet
+// 									</p>
+// 									<p className="text-sm text-gray-400 mt-1">
+// 										Be the first to review this business!
+// 									</p>
+// 								</div>
+// 							) : (
+// 								reviews.map((review) => (
+// 									<div
+// 										key={review._id}
+// 										className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+// 									>
+// 										<div className="flex items-start gap-3">
+// 											<div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shrink-0">
+// 												<span className="text-white font-bold text-sm">
+// 													{review.userId?.fullName?.[0]?.toUpperCase() ||
+// 														"U"}
+// 												</span>
+// 											</div>
+// 											<div className="flex-1">
+// 												<div className="flex flex-wrap items-center justify-between gap-2">
+// 													<p className="font-semibold text-gray-900 text-sm">
+// 														{review.userId
+// 															?.fullName ||
+// 															"User"}
+// 													</p>
+// 													<span className="text-xs text-gray-400">
+// 														{review.createdAt
+// 															? new Date(
+// 																	review.createdAt,
+// 																).toLocaleDateString(
+// 																	"en-KE",
+// 																	{
+// 																		day: "numeric",
+// 																		month: "short",
+// 																		year: "numeric",
+// 																	},
+// 																)
+// 															: "Recently"}
+// 													</span>
+// 												</div>
+// 												<StarRating
+// 													rating={review.rating}
+// 													size={14}
+// 													className="mt-1"
+// 												/>
+// 												{review.comment && (
+// 													<p className="text-gray-700 text-sm mt-2 leading-relaxed">
+// 														{review.comment}
+// 													</p>
+// 												)}
 // 											</div>
 // 										</div>
-// 									);
-// 								})}
-// 							</>
-// 						)}
-// 					</div>
-// 				)}
+// 									</div>
+// 								))
+// 							)}
+// 						</div>
+// 					)}
 
-// 				{activeTab === "reviews" && (
-// 					<div className="space-y-4">
-// 						{user && (
-// 							<div className="bg-white rounded-2xl border border-gray-100 p-4">
-// 								<h3 className="font-bold text-gray-900 mb-3">
-// 									Leave a Review
+// 					{/* Info Tab */}
+// 					{activeTab === "info" && (
+// 						<div className="space-y-4">
+// 							{/* About */}
+// 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+// 								<h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+// 									<Package
+// 										size={16}
+// 										className="text-orange-500"
+// 									/>
+// 									About
 // 								</h3>
-// 								<StarRating
-// 									rating={reviewForm.rating}
-// 									size={28}
-// 									interactive
-// 									onChange={(r) =>
-// 										setReviewForm((prev) => ({
-// 											...prev,
-// 											rating: r,
-// 										}))
-// 									}
-// 								/>
-// 								<textarea
-// 									value={reviewForm.comment}
-// 									onChange={(e) =>
-// 										setReviewForm((prev) => ({
-// 											...prev,
-// 											comment: e.target.value,
-// 										}))
-// 									}
-// 									placeholder="Share your experience..."
-// 									rows={3}
-// 									className="w-full mt-3 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-// 								/>
-// 								<button
-// 									onClick={handleSubmitReview}
-// 									disabled={
-// 										reviewForm.rating === 0 ||
-// 										submittingReview
-// 									}
-// 									className="mt-2 bg-orange-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-// 								>
-// 									{submittingReview
-// 										? "Submitting..."
-// 										: "Submit Review"}
-// 								</button>
-// 							</div>
-// 						)}
-// 						{reviews.length === 0 ? (
-// 							<div className="text-center py-10 bg-white rounded-2xl border border-gray-100">
-// 								<Star
-// 									size={32}
-// 									className="text-gray-300 mx-auto mb-2"
-// 								/>
-// 								<p className="text-gray-500">
-// 									No reviews yet. Be the first!
+// 								<p className="text-gray-600 text-sm leading-relaxed">
+// 									{business.description ||
+// 										"No description available."}
 // 								</p>
 // 							</div>
-// 						) : (
-// 							reviews.map((review) => (
-// 								<div
-// 									key={review.id}
-// 									className="bg-white rounded-2xl border border-gray-100 p-4"
-// 								>
-// 									<div className="flex items-center gap-2 mb-2">
-// 										<div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-// 											<span className="text-orange-600 font-bold text-sm">
-// 												{review.profiles?.full_name?.[0]?.toUpperCase() ||
-// 													"U"}
+
+// 							{/* Contact & Location */}
+// 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+// 								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+// 									<MapPin
+// 										size={16}
+// 										className="text-orange-500"
+// 									/>
+// 									Contact & Location
+// 								</h3>
+// 								<div className="space-y-2.5">
+// 									{business.location?.address && (
+// 										<div className="flex items-center gap-2 text-sm text-gray-600">
+// 											<MapPin
+// 												size={14}
+// 												className="text-orange-500 shrink-0"
+// 											/>
+// 											<span>
+// 												{business.location.address}
 // 											</span>
 // 										</div>
-// 										<div>
-// 											<p className="font-semibold text-gray-900 text-sm">
-// 												{review.profiles?.full_name ||
-// 													"User"}
-// 											</p>
-// 											<StarRating
-// 												rating={review.rating}
-// 												size={12}
-// 											/>
-// 										</div>
-// 										<span className="ml-auto text-xs text-gray-400">
-// 											{review.created_at
-// 												? new Date(
-// 														review.created_at,
-// 													).toLocaleDateString()
-// 												: "Just now"}
-// 										</span>
-// 									</div>
-// 									{review.comment && (
-// 										<p className="text-gray-700 text-sm">
-// 											{review.comment}
-// 										</p>
 // 									)}
-// 									{review.owner_reply && (
-// 										<div className="mt-2 bg-orange-50 rounded-xl p-3">
-// 											<p className="text-xs font-semibold text-orange-700 mb-1">
-// 												Owner replied:
-// 											</p>
-// 											<p className="text-sm text-gray-700">
-// 												{review.owner_reply}
-// 											</p>
+// 									{business.phone && (
+// 										<div className="flex items-center gap-2 text-sm text-gray-600">
+// 											<Phone
+// 												size={14}
+// 												className="text-orange-500 shrink-0"
+// 											/>
+// 											<a
+// 												href={`tel:${business.phone}`}
+// 												className="hover:text-orange-500"
+// 											>
+// 												{business.phone}
+// 											</a>
+// 										</div>
+// 									)}
+// 									{business.email && (
+// 										<div className="flex items-center gap-2 text-sm text-gray-600">
+// 											<Mail
+// 												size={14}
+// 												className="text-orange-500 shrink-0"
+// 											/>
+// 											<a
+// 												href={`mailto:${business.email}`}
+// 												className="hover:text-orange-500"
+// 											>
+// 												{business.email}
+// 											</a>
+// 										</div>
+// 									)}
+// 									{business.website && (
+// 										<div className="flex items-center gap-2 text-sm text-gray-600">
+// 											<Globe
+// 												size={14}
+// 												className="text-orange-500 shrink-0"
+// 											/>
+// 											<a
+// 												href={business.website}
+// 												target="_blank"
+// 												rel="noopener noreferrer"
+// 												className="hover:text-orange-500"
+// 											>
+// 												{business.website}
+// 											</a>
 // 										</div>
 // 									)}
 // 								</div>
-// 							))
-// 						)}
-// 					</div>
-// 				)}
+// 							</div>
 
-// 				{activeTab === "info" && (
-// 					<div className="space-y-3">
-// 						<div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-// 							<h3 className="font-bold text-gray-900">About</h3>
-// 							<p className="text-gray-600 text-sm leading-relaxed">
-// 								{business.description ||
-// 									"No description available."}
-// 							</p>
-// 						</div>
-// 						<div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-// 							<h3 className="font-bold text-gray-900">
-// 								Contact & Location
-// 							</h3>
-// 							{[
-// 								{
-// 									icon: MapPin,
-// 									label: business.address,
-// 									show: !!business.address,
-// 								},
-// 								{
-// 									icon: Phone,
-// 									label: business.phone,
-// 									show: !!business.phone,
-// 								},
-// 								{
-// 									icon: Mail,
-// 									label: business.email,
-// 									show: !!business.email,
-// 								},
-// 								{
-// 									icon: Globe,
-// 									label: business.website,
-// 									show: !!business.website,
-// 								},
-// 							]
-// 								.filter((i) => i.show)
-// 								.map(({ icon: Icon, label }) => (
-// 									<div
-// 										key={label}
-// 										className="flex items-center gap-2 text-sm text-gray-600"
-// 									>
-// 										<Icon
-// 											size={15}
-// 											className="text-orange-500 shrink-0"
-// 										/>
-// 										<span>{label}</span>
-// 									</div>
-// 								))}
-// 						</div>
-// 						<div className="bg-white rounded-2xl border border-gray-100 p-4">
-// 							<h3 className="font-bold text-gray-900 mb-3">
-// 								Opening Hours
-// 							</h3>
-// 							<div className="grid grid-cols-2 gap-y-1.5">
-// 								{days.map((day) => {
-// 									const isToday = day === today;
-// 									const isOpen =
-// 										business.open_days?.includes(day) ||
-// 										false;
-// 									return (
-// 										<div
-// 											key={day}
-// 											className={`flex items-center justify-between col-span-2 py-1 px-2 rounded-lg text-sm ${isToday ? "bg-orange-50" : ""}`}
-// 										>
-// 											<span
-// 												className={`font-medium ${isToday ? "text-orange-600" : "text-gray-700"}`}
+// 							{/* Opening Hours */}
+// 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+// 								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+// 									<Clock
+// 										size={16}
+// 										className="text-orange-500"
+// 									/>
+// 									Opening Hours
+// 								</h3>
+// 								<div className="space-y-1.5">
+// 									{days.map((day) => {
+// 										const isToday = day === today;
+// 										const isOpenDay =
+// 											business.open_days?.includes(day) ||
+// 											false;
+
+// 										return (
+// 											<div
+// 												key={day}
+// 												className={`flex items-center justify-between py-2 px-2 rounded-lg text-sm ${
+// 													isToday
+// 														? "bg-orange-50"
+// 														: ""
+// 												}`}
 // 											>
-// 												{day}
-// 												{isToday ? " (Today)" : ""}
-// 											</span>
-// 											<span
-// 												className={
-// 													isOpen
-// 														? "text-gray-600"
-// 														: "text-gray-400"
-// 												}
-// 											>
-// 												{isOpen
-// 													? `${business.opening_time} – ${business.closing_time}`
-// 													: "Closed"}
-// 											</span>
-// 										</div>
-// 									);
-// 								})}
+// 												<span
+// 													className={`font-medium ${isToday ? "text-orange-600" : "text-gray-700"}`}
+// 												>
+// 													{day}
+// 													{isToday && " (Today)"}
+// 												</span>
+// 												<span
+// 													className={
+// 														isOpenDay
+// 															? "text-gray-600"
+// 															: "text-gray-400"
+// 													}
+// 												>
+// 													{isOpenDay
+// 														? `${business.opening_time || "N/A"} – ${business.closing_time || "N/A"}`
+// 														: "Closed"}
+// 												</span>
+// 											</div>
+// 										);
+// 									})}
+// 								</div>
 // 							</div>
 // 						</div>
-// 					</div>
-// 				)}
-// 			</div>
-// 		</div>
+// 					)}
+// 				</div>
+// 			</section>
+// 		</>
 // 	);
 // }
 
@@ -865,11 +848,21 @@ import {
 	Share2,
 } from "lucide-react";
 import { useAuth } from "../lib/context/AuthContext";
-import { useCart } from "../lib/context/CartContext";
+// import { useCart } from "../lib/context/CartContext";
 import { businessAPI, productAPI, reviewAPI, favoritesAPI } from "../lib/api";
 import StarRating from "../components/common/StarRating";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
+
+// Category display names and icons mapping
+const CATEGORY_CONFIG = {
+	general: { icon: Package, label: "General", color: "gray" },
+	food: { icon: Package, label: "Food & Beverages", color: "orange" },
+	clothing: { icon: Package, label: "Clothing & Fashion", color: "pink" },
+	electronics: { icon: Package, label: "Electronics", color: "blue" },
+	beauty: { icon: Package, label: "Beauty & Personal Care", color: "purple" },
+	services: { icon: Wrench, label: "Services", color: "green" },
+};
 
 export default function BusinessProfile() {
 	const { slug } = useParams();
@@ -963,18 +956,18 @@ export default function BusinessProfile() {
 		}
 	};
 
-	// const handleAddToCart = (product) => {
-	// 	if (!business) return;
-	// 	addItem(product, business._id, business.businessName);
-	// 	setAddedItems((prev) => new Set([...prev, product._id]));
-	// 	setTimeout(() => {
-	// 		setAddedItems((prev) => {
-	// 			const newSet = new Set(prev);
-	// 			newSet.delete(product._id);
-	// 			return newSet;
-	// 		});
-	// 	}, 2000);
-	// };
+	const handleAddToCart = (product) => {
+		// if (!business) return;
+		// addItem(product, business._id, business.businessName);
+		// setAddedItems((prev) => new Set([...prev, product._id]));
+		// setTimeout(() => {
+		// 	setAddedItems((prev) => {
+		// 		const newSet = new Set(prev);
+		// 		newSet.delete(product._id);
+		// 		return newSet;
+		// 	});
+		// }, 2000);
+	};
 
 	const handleSubmitReview = async () => {
 		if (!user || !business || reviewForm.rating === 0) {
@@ -1028,6 +1021,27 @@ export default function BusinessProfile() {
 		setShowShareMenu(false);
 	};
 
+	// Helper function to get product image (handles both images array and image_url)
+	const getProductImage = (product) => {
+		if (product.images && product.images.length > 0) {
+			return product.images[0];
+		}
+		return product.image_url || null;
+	};
+
+	// Group products by category
+	const getGroupedProducts = () => {
+		const grouped = {};
+		products.forEach((product) => {
+			const category = product.category || "general";
+			if (!grouped[category]) {
+				grouped[category] = [];
+			}
+			grouped[category].push(product);
+		});
+		return grouped;
+	};
+
 	const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 	const today = days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 
@@ -1046,7 +1060,7 @@ export default function BusinessProfile() {
 
 				<section className="text-center py-20 px-4">
 					<div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<Store size={32} className="text-gray-400" />
+						<Package size={32} className="text-gray-400" />
 					</div>
 					<p className="text-gray-500 text-lg font-medium">
 						Business not found
@@ -1075,6 +1089,8 @@ export default function BusinessProfile() {
 		business.averageRating || business.average_rating || 0;
 	const reviewCount = business.reviewCount || reviews.length;
 	const isOpen = business.open_days?.includes(today);
+	const groupedProducts = getGroupedProducts();
+	const hasProducts = products.length > 0;
 
 	return (
 		<>
@@ -1298,10 +1314,10 @@ export default function BusinessProfile() {
 						))}
 					</div>
 
-					{/* Menu Tab */}
+					{/* Menu Tab - Fixed to use category instead of type */}
 					{activeTab === "menu" && (
 						<div className="space-y-4">
-							{products.length === 0 ? (
+							{!hasProducts ? (
 								<div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
 									<Package
 										size={48}
@@ -1315,31 +1331,22 @@ export default function BusinessProfile() {
 									</p>
 								</div>
 							) : (
-								<>
-									{/* Group by category or type */}
-									{["product", "service"].map((type) => {
-										const items = products.filter(
-											(p) => p.type === type,
-										);
-										if (items.length === 0) return null;
+								// Group products by category
+								Object.entries(groupedProducts).map(
+									([category, items]) => {
+										const config =
+											CATEGORY_CONFIG[category] ||
+											CATEGORY_CONFIG.general;
+										const Icon = config.icon;
 
 										return (
-											<div key={type}>
+											<div key={category}>
 												<h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide flex items-center gap-2 mb-3">
-													{type === "product" ? (
-														<Package
-															size={14}
-															className="text-orange-500"
-														/>
-													) : (
-														<Wrench
-															size={14}
-															className="text-orange-500"
-														/>
-													)}
-													{type === "product"
-														? "Products"
-														: "Services"}
+													<Icon
+														size={14}
+														className="text-orange-500"
+													/>
+													{config.label}
 												</h3>
 												<div className="space-y-2">
 													{items.map((item) => (
@@ -1347,11 +1354,13 @@ export default function BusinessProfile() {
 															key={item._id}
 															className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3 hover:shadow-sm transition-shadow"
 														>
-															{item.image_url && (
+															{getProductImage(
+																item,
+															) && (
 																<img
-																	src={
-																		item.image_url
-																	}
+																	src={getProductImage(
+																		item,
+																	)}
 																	alt={
 																		item.name
 																	}
@@ -1359,9 +1368,20 @@ export default function BusinessProfile() {
 																/>
 															)}
 															<div className="flex-1 min-w-0">
-																<p className="font-semibold text-gray-900 text-sm">
-																	{item.name}
-																</p>
+																<div className="flex items-center justify-between">
+																	<p className="font-semibold text-gray-900 text-sm">
+																		{
+																			item.name
+																		}
+																	</p>
+																	{!item.isAvailable && (
+																		<span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">
+																			Out
+																			of
+																			Stock
+																		</span>
+																	)}
+																</div>
 																{item.description && (
 																	<p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
 																		{
@@ -1369,23 +1389,42 @@ export default function BusinessProfile() {
 																		}
 																	</p>
 																)}
-																<p className="font-bold text-orange-500 text-base mt-1">
-																	KES{" "}
-																	{item.price.toLocaleString()}
-																</p>
+																<div className="flex items-center justify-between mt-1">
+																	<p className="font-bold text-orange-500 text-base">
+																		KES{" "}
+																		{item.price.toLocaleString()}
+																	</p>
+																	{item.stock >
+																		0 &&
+																		item.stock <
+																			10 && (
+																			<span className="text-xs text-orange-500">
+																				Only{" "}
+																				{
+																					item.stock
+																				}{" "}
+																				left
+																			</span>
+																		)}
+																</div>
 															</div>
 															<button
-																// onClick={() =>
-																// 	handleAddToCart(
-																// 		item,
-																// 	)
-																// }
-																className={`shrink-0 p-2 rounded-xl transition-all ${
-																	addedItems.has(
-																		item._id,
+																onClick={() =>
+																	handleAddToCart(
+																		item,
 																	)
-																		? "bg-green-500 text-white"
-																		: "bg-orange-500 text-white hover:bg-orange-600"
+																}
+																disabled={
+																	!item.isAvailable
+																}
+																className={`shrink-0 p-2 rounded-xl transition-all ${
+																	!item.isAvailable
+																		? "bg-gray-300 text-gray-500 cursor-not-allowed"
+																		: addedItems.has(
+																					item._id,
+																			  )
+																			? "bg-green-500 text-white"
+																			: "bg-orange-500 text-white hover:bg-orange-600"
 																}`}
 																aria-label="Add to cart"
 															>
@@ -1410,8 +1449,8 @@ export default function BusinessProfile() {
 												</div>
 											</div>
 										);
-									})}
-								</>
+									},
+								)
 							)}
 						</div>
 					)}
