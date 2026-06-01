@@ -8,16 +8,7 @@ import {
 	XCircle,
 	Package,
 } from "lucide-react";
-import { db } from "../lib/firebase.config";
-import {
-	collection,
-	query,
-	where,
-	getDocs,
-	getDoc,
-	doc,
-	orderBy,
-} from "firebase/firestore";
+import { orderAPI } from "../lib/api";
 import { useAuth } from "../lib/context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
@@ -28,8 +19,8 @@ const STATUS_CONFIG = {
 		color: "bg-yellow-100 text-yellow-700",
 		icon: <Clock size={14} />,
 	},
-	accepted: {
-		label: "Accepted",
+	confirmed: {
+		label: "Confirmed",
 		color: "bg-blue-100 text-blue-700",
 		icon: <CheckCircle size={14} />,
 	},
@@ -39,12 +30,12 @@ const STATUS_CONFIG = {
 		icon: <Package size={14} />,
 	},
 	ready: {
-		label: "Ready",
+		label: "Ready for Pickup",
 		color: "bg-green-100 text-green-700",
 		icon: <CheckCircle size={14} />,
 	},
-	completed: {
-		label: "Completed",
+	delivered: {
+		label: "Delivered",
 		color: "bg-gray-100 text-gray-600",
 		icon: <CheckCircle size={14} />,
 	},
@@ -70,52 +61,8 @@ export default function Orders() {
 		const fetchOrders = async () => {
 			setLoading(true);
 			try {
-				// Fetch orders for the current user
-				const ordersQuery = query(
-					collection(db, "orders"),
-					where("customer_id", "==", user.uid),
-					orderBy("created_at", "desc"),
-				);
-				const ordersSnapshot = await getDocs(ordersQuery);
-				const ordersData = [];
-
-				for (const orderDoc of ordersSnapshot.docs) {
-					const orderData = { id: orderDoc.id, ...orderDoc.data() };
-
-					// Fetch business details
-					if (orderData.business_id) {
-						const businessDoc = await getDoc(
-							doc(db, "businesses", orderData.business_id),
-						);
-						if (businessDoc.exists()) {
-							const businessData = businessDoc.data();
-							orderData.businesses = {
-								name: businessData.name,
-								logo: businessData.logo,
-								cover_image: businessData.cover_image,
-								slug: businessData.slug,
-							};
-						}
-					}
-
-					// Fetch order items
-					const orderItemsQuery = query(
-						collection(db, "order_items"),
-						where("order_id", "==", orderDoc.id),
-					);
-					const orderItemsSnapshot = await getDocs(orderItemsQuery);
-					const orderItemsData = orderItemsSnapshot.docs.map(
-						(doc) => ({
-							id: doc.id,
-							...doc.data(),
-						}),
-					);
-					orderData.order_items = orderItemsData;
-
-					ordersData.push(orderData);
-				}
-
-				setOrders(ordersData);
+				const response = await orderAPI.getMyOrders();
+				setOrders(response.data || []);
 			} catch (error) {
 				console.error("Error fetching orders:", error);
 			} finally {
@@ -125,6 +72,13 @@ export default function Orders() {
 
 		fetchOrders();
 	}, [user, navigate]);
+
+	// Helper to get business image
+	const getBusinessImage = (business) => {
+		if (business?.logo) return business.logo;
+		if (business?.coverImage) return business.coverImage;
+		return null;
+	};
 
 	if (loading) {
 		return (
@@ -141,7 +95,7 @@ export default function Orders() {
 				description="View your order history, track deliveries, and manage your purchases from local businesses in Tassia."
 			/>
 
-			<section className="max-w-xl mx-auto px-4 py-4">
+			<section className="max-w-xl mx-auto px-4 py-4 mb-20">
 				<h1 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
 					<ClipboardList size={22} className="text-orange-500" /> My
 					Orders
@@ -172,18 +126,22 @@ export default function Orders() {
 							const status =
 								STATUS_CONFIG[order.status] ||
 								STATUS_CONFIG.pending;
-							const biz = order.businesses;
+							const business = order.businessId || {};
+							const businessName =
+								business.businessName || "Business";
+							const businessImage = getBusinessImage(business);
+
 							return (
 								<div
-									key={order.id}
-									className="bg-white rounded-2xl border border-gray-100 p-4"
+									key={order._id}
+									className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md transition-shadow"
 								>
 									<div className="flex items-center gap-3">
 										<div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
-											{biz?.logo ? (
+											{businessImage ? (
 												<img
-													src={biz.logo}
-													alt={biz.name}
+													src={businessImage}
+													alt={businessName}
 													className="w-12 h-12 rounded-xl object-cover"
 												/>
 											) : (
@@ -196,7 +154,7 @@ export default function Orders() {
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center justify-between">
 												<p className="font-bold text-gray-900 text-sm truncate">
-													{biz?.name || "Business"}
+													{businessName}
 												</p>
 												<ChevronRight
 													size={16}
@@ -204,9 +162,9 @@ export default function Orders() {
 												/>
 											</div>
 											<p className="text-xs text-gray-500 mt-0.5">
-												{order.created_at
+												{order.createdAt
 													? new Date(
-															order.created_at,
+															order.createdAt,
 														).toLocaleDateString(
 															"en-KE",
 															{
@@ -227,32 +185,44 @@ export default function Orders() {
 												</span>
 												<span className="font-bold text-orange-500">
 													KES{" "}
-													{order.total_amount?.toLocaleString() ||
+													{order.total?.toLocaleString() ||
 														0}
 												</span>
 											</div>
 										</div>
 									</div>
-									{order.order_items &&
-										order.order_items.length > 0 && (
-											<div className="mt-3 pt-3 border-t border-gray-50">
-												<p className="text-xs text-gray-400">
-													{order.order_items
-														.map(
-															(i) =>
-																`${i.name} ×${i.quantity}`,
-														)
-														.join(", ")}
-												</p>
-											</div>
-										)}
+
+									{order.items && order.items.length > 0 && (
+										<div className="mt-3 pt-3 border-t border-gray-50">
+											<p className="text-xs text-gray-400">
+												{order.items
+													.map(
+														(i) =>
+															`${i.name} ×${i.quantity}`,
+													)
+													.join(", ")}
+											</p>
+										</div>
+									)}
+
 									<div className="mt-3 flex items-center justify-between">
 										<span className="text-xs text-gray-400 capitalize">
-											{order.order_type || "delivery"}
+											Order #
+											{order.orderNumber ||
+												order._id.slice(-6)}
 										</span>
-										{order.notes && (
-											<span className="text-xs text-gray-400 italic truncate max-w-[200px]">
-												"{order.notes}"
+										{order.paymentStatus && (
+											<span
+												className={`text-xs px-2 py-0.5 rounded-full ${
+													order.paymentStatus ===
+													"paid"
+														? "bg-green-100 text-green-700"
+														: "bg-yellow-100 text-yellow-700"
+												}`}
+											>
+												{order.paymentStatus === "paid"
+													? "Paid"
+													: "Payment Pending"}
 											</span>
 										)}
 									</div>

@@ -57,10 +57,4 @@ communityPostSchema.pre(/^find/, function () {
 	this.populate("authorId", "fullName email profileImage");
 });
 
-// Alternative if you need to use next (callback style):
-// communityPostSchema.pre(/^find/, function(next) {
-//   this.populate("authorId", "fullName email profileImage");
-//   next();
-// });
-
 export default mongoose.model("CommunityPost", communityPostSchema);

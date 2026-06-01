@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import data from "../../lib/data";
 import Header from "./Header";
 import BottomNav from "./BottomNav";
-// import CartDrawer from "../orders/CartDrawer";
+import CartDrawer from "../orders/CartDrawer";
 
 const Layout = () => {
 	return (
@@ -12,7 +12,7 @@ const Layout = () => {
 				<Outlet />
 			</main>
 			<BottomNav />
-			{/* <CartDrawer /> */}
+			<CartDrawer />
 		</div>
 	);
 };

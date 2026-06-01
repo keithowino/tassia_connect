@@ -71,24 +71,6 @@ export const orderAPI = {
 	updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
 };
 
-// // Community API
-// export const communityAPI = {
-// 	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
-// 	getAll: (page = 1, limit = 20) =>
-// 		api
-// 			.get(`/community/posts?page=${page}&limit=${limit}`)
-// 			.catch(() => ({ data: { posts: [], total: 0, pages: 0 } })),
-// 	getByType: (type, page = 1, limit = 20) =>
-// 		api
-// 			.get(`/community/posts?type=${type}&page=${page}&limit=${limit}`)
-// 			.catch(() => ({ data: { posts: [], total: 0, pages: 0 } })),
-// 	getById: (id) => api.get(`/community/posts/${id}`),
-// 	create: (data) => api.post("/community/posts", data),
-// 	update: (id, data) => api.put(`/community/posts/${id}`, data),
-// 	delete: (id) => api.delete(`/community/posts/${id}`),
-// 	togglePin: (id) => api.patch(`/community/posts/${id}/pin`),
-// };
-
 // Community API
 export const communityAPI = {
 	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
