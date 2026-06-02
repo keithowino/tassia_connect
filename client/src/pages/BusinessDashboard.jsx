@@ -22,6 +22,7 @@ import { businessAPI, productAPI, orderAPI, categoryAPI } from "../lib/api";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import data from "../lib/data";
+import OrdersTab from "../components/business/OrdersTab";
 
 export default function BusinessDashboard() {
 	const { businessId } = useParams();
@@ -38,7 +39,6 @@ export default function BusinessDashboard() {
 	const [saving, setSaving] = useState(false);
 	const [showProductForm, setShowProductForm] = useState(false);
 	const [editingProduct, setEditingProduct] = useState(null);
-
 	const [form, setForm] = useState({
 		businessName: "",
 		tagline: "",
@@ -60,7 +60,6 @@ export default function BusinessDashboard() {
 		logo: "",
 		open_days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 	});
-
 	const [productForm, setProductForm] = useState({
 		name: "",
 		description: "",
@@ -309,9 +308,9 @@ export default function BusinessDashboard() {
 		}
 	};
 
-	const updateOrderStatus = async (orderId, status) => {
+	const handleUpdateStatus = async (orderId, newStatus) => {
 		try {
-			const response = await orderAPI.updateStatus(orderId, status);
+			const response = await orderAPI.updateStatus(orderId, newStatus);
 			setOrders((prev) =>
 				prev.map((o) => (o._id === orderId ? response.data : o)),
 			);
@@ -1076,101 +1075,13 @@ export default function BusinessDashboard() {
 					</div>
 				)}
 
-				{/* Orders Tab */}
 				{tab === "orders" && business && (
-					<div className="space-y-3">
-						<h2 className="font-bold text-gray-900 flex items-center gap-2">
-							<ClipboardList
-								size={18}
-								className="text-orange-500"
-							/>{" "}
-							Incoming Orders
-						</h2>
-
-						{orders.length === 0 ? (
-							<div className="text-center py-10 bg-white rounded-2xl border border-gray-100">
-								<TrendingUp
-									size={40}
-									className="text-gray-300 mx-auto mb-2"
-								/>
-								<p className="text-gray-500 text-sm">
-									No orders yet
-								</p>
-							</div>
-						) : (
-							orders.map((order) => (
-								<div
-									key={order._id}
-									className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm"
-								>
-									<div className="flex items-center justify-between mb-2">
-										<span className="font-mono text-xs text-gray-400">
-											{order.orderNumber ||
-												order._id
-													.slice(0, 8)
-													.toUpperCase()}
-										</span>
-										<span className="font-bold text-orange-500">
-											KES{" "}
-											{order.total?.toLocaleString() || 0}
-										</span>
-									</div>
-
-									{order.items && (
-										<p className="text-sm text-gray-600 mb-2">
-											{order.items
-												.map(
-													(i) =>
-														`${i.name} ×${i.quantity}`,
-												)
-												.join(", ")}
-										</p>
-									)}
-
-									{order.specialInstructions && (
-										<p className="text-xs text-gray-400 italic mb-2">
-											"{order.specialInstructions}"
-										</p>
-									)}
-
-									<div className="flex items-center gap-2 flex-wrap">
-										{[
-											"pending",
-											"confirmed",
-											"preparing",
-											"ready",
-											"delivered",
-										].map((s) => (
-											<button
-												key={s}
-												onClick={() =>
-													updateOrderStatus(
-														order._id,
-														s,
-													)
-												}
-												className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize transition-all ${
-													order.status === s
-														? "bg-orange-500 text-white"
-														: "bg-gray-100 text-gray-600 hover:bg-gray-200"
-												}`}
-											>
-												{s}
-											</button>
-										))}
-									</div>
-
-									<p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-										<Clock size={11} />{" "}
-										{order.createdAt
-											? new Date(
-													order.createdAt,
-												).toLocaleString("en-KE")
-											: "Just now"}
-									</p>
-								</div>
-							))
-						)}
+					// <div className="max-w-xl mx-auto px-4 py-6 mb-20">
+					<div className="max-w-xl mx-auto mb-20">
+						<OrdersTab
+							orders={orders}
+							onUpdateStatus={handleUpdateStatus}
+						/>
 					</div>
 				)}
 

@@ -97,10 +97,35 @@ export default function Discovery() {
 		fetchFavorites();
 	}, [user]);
 
-	// Handle toggling favorites
+	// // Handle toggling favorites
+	// const handleToggleFavorite = async (businessId) => {
+	// 	if (!user) {
+	// 		// Redirect to login or show message
+	// 		alert("Please login to save favorites");
+	// 		return;
+	// 	}
+
+	// 	try {
+	// 		if (favorites.has(businessId)) {
+	// 			// Remove from favorites
+	// 			await favoritesAPI.removeFavorite(businessId);
+	// 			setFavorites((prev) => {
+	// 				const newSet = new Set(prev);
+	// 				newSet.delete(businessId);
+	// 				return newSet;
+	// 			});
+	// 		} else {
+	// 			// Add to favorites
+	// 			await favoritesAPI.addFavorite(businessId);
+	// 			setFavorites((prev) => new Set([...prev, businessId]));
+	// 		}
+	// 	} catch (error) {
+	// 		console.error("Error toggling favorite:", error);
+	// 	}
+	// };
+
 	const handleToggleFavorite = async (businessId) => {
 		if (!user) {
-			// Redirect to login or show message
 			alert("Please login to save favorites");
 			return;
 		}
@@ -112,15 +137,25 @@ export default function Discovery() {
 				setFavorites((prev) => {
 					const newSet = new Set(prev);
 					newSet.delete(businessId);
+					console.log("Removed from favorites, new set:", newSet);
 					return newSet;
 				});
 			} else {
 				// Add to favorites
 				await favoritesAPI.addFavorite(businessId);
-				setFavorites((prev) => new Set([...prev, businessId]));
+				setFavorites((prev) => {
+					const newSet = new Set([...prev, businessId]);
+					console.log("Added to favorites, new set:", newSet);
+					return newSet;
+				});
 			}
 		} catch (error) {
 			console.error("Error toggling favorite:", error);
+			console.error("Error response:", error.response?.data);
+			alert(
+				error.response?.data?.message ||
+					"Failed to update favorite. Please try again.",
+			);
 		}
 	};
 

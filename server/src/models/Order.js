@@ -71,6 +71,9 @@ const orderSchema = new mongoose.Schema(
 			default: "pending",
 		},
 		deliveryAddress: {
+			type: String,
+			address: String,
+			floorUnit: String,
 			street: String,
 			city: String,
 			instructions: String,
