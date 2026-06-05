@@ -5,10 +5,15 @@ import {
 	createProduct,
 	updateProduct,
 	deleteProduct,
+	getAllProducts,
 } from "../controllers/productController.js";
-import { protect } from "../middleware/auth.js";
+import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
+
+// Add this new route BEFORE your existing routes
+// Get all products (admin only)
+router.get("/", protect, adminOnly, getAllProducts);
 
 // Public routes
 router.get("/business/:businessId", getProductsByBusiness);

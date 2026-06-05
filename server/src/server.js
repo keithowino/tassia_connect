@@ -14,6 +14,12 @@ import adminRoutes from "./routes/adminRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
 
+/*
+// recommended for use only during development.
+import dns from "dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+*/
+
 const envFile =
 	process.env.NODE_ENV === "production"
 		? ".env.production"

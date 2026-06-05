@@ -270,17 +270,6 @@ export default function Header() {
 													>
 														⚙️ Admin Panel
 													</Link>
-													<Link
-														to="/admin/categories"
-														onClick={() =>
-															setUserMenuOpen(
-																false,
-															)
-														}
-														className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-													>
-														📁 Manage Categories
-													</Link>
 												</>
 											)}
 										</div>

@@ -1,3 +1,13 @@
+import {
+	LayoutDashboard,
+	MessageSquare,
+	Package,
+	ShoppingCart,
+	Star,
+	Store,
+	Tags,
+	Users,
+} from "lucide-react";
 import { createContext, useContext, useState } from "react";
 
 const CommonContext = createContext(undefined);
@@ -52,6 +62,22 @@ export const CommonProvider = ({ children }) => {
 		automotive: "#ef4444",
 	});
 
+	const [adminNavItems, setAdminNavItems] = useState([
+		{
+			path: "/admin",
+			label: "Overview",
+			icon: LayoutDashboard,
+			exact: true,
+		},
+		{ path: "/admin/businesses", label: "Businesses", icon: Store },
+		{ path: "/admin/orders", label: "Orders", icon: ShoppingCart },
+		{ path: "/admin/products", label: "Products", icon: Package },
+		{ path: "/admin/reviews", label: "Reviews", icon: Star },
+		{ path: "/admin/community", label: "Community", icon: MessageSquare },
+		{ path: "/admin/users", label: "Users", icon: Users },
+		{ path: "/admin/categories", label: "Categories", icon: Tags },
+	]);
+
 	const getDefaultIconForCategory = (category) => {
 		const lowerCategory = category.toLowerCase();
 		for (const [key, icon] of Object.entries(iconMap)) {
@@ -77,6 +103,7 @@ export const CommonProvider = ({ children }) => {
 		typeColors,
 		getDefaultIconForCategory,
 		getDefaultColorForCategory,
+		adminNavItems,
 	};
 
 	return (

@@ -1,7 +1,35 @@
 import Category from "../models/Category.js";
 import Business from "../models/Business.js";
 
-// Get all categories
+// // Get all categories
+// export const getAllCategories = async (req, res) => {
+// 	try {
+// 		const categories = await Category.find({ isActive: true }).sort({
+// 			sortOrder: 1,
+// 			name: 1,
+// 		});
+
+// 		// Get business count for each category
+// 		const categoriesWithCount = await Promise.all(
+// 			categories.map(async (category) => {
+// 				const businessCount = await Business.countDocuments({
+// 					category: category.name,
+// 					isActive: true,
+// 				});
+
+// 				return {
+// 					...category.toObject(),
+// 					businessCount,
+// 				};
+// 			}),
+// 		);
+
+// 		res.json(categoriesWithCount);
+// 	} catch (error) {
+// 		res.status(500).json({ message: error.message });
+// 	}
+// };
+
 export const getAllCategories = async (req, res) => {
 	try {
 		const categories = await Category.find({ isActive: true }).sort({
@@ -10,6 +38,35 @@ export const getAllCategories = async (req, res) => {
 		});
 
 		// Get business count for each category
+		const categoriesWithCount = await Promise.all(
+			categories.map(async (category) => {
+				const businessCount = await Business.countDocuments({
+					category: category.name,
+					isActive: true,
+				});
+
+				return {
+					...category.toObject(),
+					businessCount,
+				};
+			}),
+		);
+
+		res.json(categoriesWithCount);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Get all categories for admin
+export const getAllCategoriesAdmin = async (req, res) => {
+	try {
+		const categories = await Category.find({}).sort({
+			sortOrder: 1,
+			name: 1,
+		});
+
+		// Get business count for each category (count active businesses only)
 		const categoriesWithCount = await Promise.all(
 			categories.map(async (category) => {
 				const businessCount = await Business.countDocuments({

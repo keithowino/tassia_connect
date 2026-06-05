@@ -138,3 +138,16 @@ export const getProductById = async (req, res) => {
 		res.status(500).json({ message: error.message });
 	}
 };
+
+// Get all products (admin only)
+export const getAllProducts = async (req, res) => {
+	try {
+		const products = await Product.find({})
+			.populate("businessId", "businessName ownerId")
+			.sort({ createdAt: -1 });
+
+		res.json(products);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};

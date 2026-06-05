@@ -56,6 +56,7 @@ export const businessAPI = {
 
 // Product API
 export const productAPI = {
+	getAll: () => api.get("/products"), // Admin only
 	getByBusiness: (businessId) => api.get(`/products/business/${businessId}`),
 	create: (data) => api.post("/products", data),
 	update: (id, data) => api.put(`/products/${id}`, data),
@@ -64,11 +65,14 @@ export const productAPI = {
 
 // Order API
 export const orderAPI = {
-	create: (data) => api.post("/orders", data),
+	getAll: () => api.get("/orders"),
 	getMyOrders: () => api.get("/orders/my"),
 	getBusinessOrders: (businessId) =>
 		api.get(`/orders/business/${businessId}`),
+	create: (data) => api.post("/orders", data),
 	updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+	updatePaymentStatus: (id, paymentStatus) =>
+		api.patch(`/orders/${id}/payment-status`, { paymentStatus }),
 };
 
 // Community API
@@ -106,6 +110,7 @@ export const communityAPI = {
 // Category API
 export const categoryAPI = {
 	getAll: () => api.get("/categories"),
+	getAllAdmin: () => api.get("/categories/admin/all"),
 	getBySlug: (slug) => api.get(`/categories/slug/${slug}`),
 	getById: (id) => api.get(`/categories/${id}`),
 	create: (data) => api.post("/categories", data),

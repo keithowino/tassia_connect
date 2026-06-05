@@ -7,6 +7,7 @@ import {
 	updateCategory,
 	deleteCategory,
 	getBusinessesByCategory,
+	getAllCategoriesAdmin,
 } from "../controllers/categoryController.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 
@@ -19,8 +20,10 @@ router.get("/:id", getCategoryById);
 router.get("/:slug/businesses", getBusinessesByCategory);
 
 // Admin only routes
-router.post("/", protect, adminOnly, createCategory);
-router.put("/:id", protect, adminOnly, updateCategory);
-router.delete("/:id", protect, adminOnly, deleteCategory);
+router.use(protect, adminOnly);
+router.get("/admin/all", getAllCategoriesAdmin);
+router.post("/", createCategory);
+router.put("/:id", updateCategory);
+router.delete("/:id", deleteCategory);
 
 export default router;

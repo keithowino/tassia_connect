@@ -25,6 +25,15 @@ import { CommonProvider } from "./lib/context/CommonContext";
 import { CartProvider } from "./lib/context/CartContext";
 import Orders from "./pages/Orders";
 import Checkout from "./pages/Checkout";
+import Overview from "./pages/admin/Overview";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminBusinesses from "./pages/admin/AdminBusinesses";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminCommunity from "./pages/admin/AdminCommunity";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 function DashboardRedirect() {
 	const { user, loading } = useAuth();
@@ -71,7 +80,22 @@ const App = () => {
 		return (
 			<Routes>
 				<Route path="/" element={<Layout />}>
-					<Route path="/admin" element={<Admin />} />
+					<Route path="/admin" element={<AdminLayout />}>
+						<Route index element={<Overview />} />
+						<Route
+							path="businesses"
+							element={<AdminBusinesses />}
+						/>
+						<Route path="orders" element={<AdminOrders />} />
+						<Route path="products" element={<AdminProducts />} />
+						<Route path="reviews" element={<AdminReviews />} />
+						<Route path="community" element={<AdminCommunity />} />
+						<Route path="users" element={<AdminUsers />} />
+						<Route
+							path="categories"
+							element={<AdminCategories />}
+						/>
+					</Route>
 					<Route path="/auth" element={<Auth />} />
 					<Route index element={<Home />} />
 					<Route path="/discover" element={<Discovery />} />

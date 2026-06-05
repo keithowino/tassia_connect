@@ -462,7 +462,7 @@ export default function Profile() {
 				) : activeTab === "admin" && isAdmin ? (
 					<div className="space-y-3">
 						<Link
-							to="/admin"
+							to="/admin/businesses"
 							className="block bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-sm transition-shadow"
 						>
 							<div className="flex items-center gap-3">

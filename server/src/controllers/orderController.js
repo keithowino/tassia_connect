@@ -199,3 +199,17 @@ export const updateOrderStatus = async (req, res) => {
 		res.status(500).json({ message: error.message });
 	}
 };
+
+// Get all orders (admin only)
+export const getAllOrders = async (req, res) => {
+	try {
+		const orders = await Order.find({})
+			.populate("userId", "fullName email phoneNumber")
+			.populate("businessId", "businessName logo")
+			.sort({ createdAt: -1 });
+
+		res.json(orders);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
