@@ -18,7 +18,6 @@ import Discovery from "./pages/Discovery";
 import Community from "./pages/Community";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessProfile from "./pages/BusinessProfile";
 import { CommonProvider } from "./lib/context/CommonContext";
