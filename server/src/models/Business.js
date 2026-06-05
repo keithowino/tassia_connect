@@ -62,7 +62,7 @@ const businessSchema = new mongoose.Schema(
 				type: String,
 				default: "",
 			},
-			label: {
+			location_label: {
 				type: String,
 				default: "Tassia Complex",
 			},

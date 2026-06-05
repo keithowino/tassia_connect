@@ -44,9 +44,15 @@ export default function BusinessDashboard() {
 		tagline: "",
 		description: "",
 		category: "",
-		address: "",
-		floor_unit: "",
-		location_label: "Tassia Complex",
+		location: {
+			address: "",
+			floor_unit: "",
+			location_label: "Tassia Complex",
+			coordinates: {
+				lat: "",
+				lng: "",
+			},
+		},
 		phone: "",
 		whatsapp: "",
 		email: "",
@@ -116,15 +122,27 @@ export default function BusinessDashboard() {
 					}
 
 					setBusiness(businessData);
+
 					setForm({
 						businessName: businessData.businessName || "",
 						tagline: businessData.tagline || "",
 						description: businessData.description || "",
 						category: businessData.category || "",
-						address: businessData.location?.address || "",
-						floor_unit: businessData.location?.floor_unit || "",
-						location_label:
-							businessData.location?.label || "Tassia Complex",
+						location: {
+							address: businessData.location?.address || "",
+							floor_unit: businessData.location?.floor_unit || "",
+							location_label:
+								businessData.location?.label ||
+								"Tassia Complex",
+							coordinates: {
+								lat:
+									businessData.location?.coordinates?.lat ||
+									0,
+								lng:
+									businessData.location?.coordinates?.lng ||
+									0,
+							},
+						},
 						phone: businessData.phone || "",
 						whatsapp: businessData.whatsapp || "",
 						email: businessData.email || "",
@@ -181,6 +199,66 @@ export default function BusinessDashboard() {
 		);
 	};
 
+	const getCurrentLocation = () => {
+		if (!navigator.geolocation) {
+			alert(
+				"Geolocation is not supported by your browser. Please enter coordinates manually.",
+			);
+			return;
+		}
+
+		// Show loading indicator
+		setSaving(true);
+
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setForm((prev) => ({
+					...prev,
+					location: {
+						...prev.location,
+						coordinates: {
+							lat: position.coords.latitude,
+							lng: position.coords.longitude,
+						},
+					},
+				}));
+				setSaving(false);
+				alert(
+					"✅ Location captured successfully! You can adjust the coordinates if needed.",
+				);
+			},
+			(error) => {
+				setSaving(false);
+				switch (error.code) {
+					case error.PERMISSION_DENIED:
+						alert(
+							"📍 Location access denied. Please enable location in your browser settings or enter coordinates manually.",
+						);
+						break;
+					case error.POSITION_UNAVAILABLE:
+						alert(
+							"📍 Location information unavailable. Please enter coordinates manually.",
+						);
+						break;
+					case error.TIMEOUT:
+						alert(
+							"📍 Location request timed out. Please try again or enter manually.",
+						);
+						break;
+					default:
+						alert(
+							"📍 Could not get your location. Please enter coordinates manually.",
+						);
+				}
+			},
+			{
+				enableHighAccuracy: true,
+				timeout: 10000,
+				maximumAge: 0,
+			},
+		);
+	};
+
 	const handleSaveBusiness = async () => {
 		if (!user || !form.businessName.trim()) {
 			alert("Please enter a business name");
@@ -199,9 +277,18 @@ export default function BusinessDashboard() {
 				whatsapp: form.whatsapp,
 				website: form.website,
 				location: {
-					address: form.address,
-					floor_unit: form.floor_unit,
-					label: form.location_label,
+					address: form.location?.address || "",
+					floor_unit: form.location?.floor_unit || "",
+					location_label:
+						form.location?.location_label || "Tassia Complex",
+					coordinates: {
+						lat: form.location?.coordinates?.lat
+							? parseFloat(form.location.coordinates.lat)
+							: 0,
+						lng: form.location?.coordinates?.lng
+							? parseFloat(form.location.coordinates.lng)
+							: 0,
+					},
 				},
 				opening_time: form.opening_time,
 				closing_time: form.closing_time,
@@ -617,6 +704,73 @@ export default function BusinessDashboard() {
 							/>
 						</div>
 
+						{/* Location Coordinates */}
+						<div className="grid grid-cols-3 gap-3">
+							<div>
+								<label className="block text-xs font-semibold text-gray-600 mb-1">
+									Latitude
+								</label>
+								<input
+									type="text"
+									placeholder="e.g., -1.2921"
+									value={form.location.coordinates.lat || ""}
+									onChange={(e) =>
+										setForm((prev) => ({
+											...prev,
+											location: {
+												...prev.location,
+												coordinates: {
+													...prev.location
+														.coordinates,
+													lat: e.target.value,
+												},
+											},
+										}))
+									}
+									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+								/>
+								<p className="text-[10px] text-gray-400 mt-0.5">
+									Get from Google Maps
+								</p>
+							</div>
+							<div>
+								<label className="block text-xs font-semibold text-gray-600 mb-1">
+									Longitude
+								</label>
+								<input
+									type="text"
+									placeholder="e.g., 36.8219"
+									value={form.location.coordinates.lng || ""}
+									onChange={(e) =>
+										setForm((prev) => ({
+											...prev,
+											location: {
+												...prev.location,
+												coordinates: {
+													...prev.location
+														.coordinates,
+													lng: e.target.value,
+												},
+											},
+										}))
+									}
+									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+								/>
+							</div>
+							<div className="flex items-center justify-start">
+								<button
+									type="button"
+									onClick={getCurrentLocation}
+									disabled={saving}
+									className="w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50"
+								>
+									{saving
+										? "📍 Getting location..."
+										: "📍 Use My Location"}
+								</button>
+							</div>
+						</div>
+
 						{/* Address */}
 						<div>
 							<label className="block text-xs font-semibold text-gray-600 mb-1">
@@ -625,11 +779,14 @@ export default function BusinessDashboard() {
 							<input
 								type="text"
 								placeholder="e.g. Tassia Complex, Block B"
-								value={form.address}
+								value={form.location.address}
 								onChange={(e) =>
 									setForm((prev) => ({
 										...prev,
-										address: e.target.value,
+										location: {
+											...prev.location,
+											address: e.target.value,
+										},
 									}))
 								}
 								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
@@ -644,11 +801,14 @@ export default function BusinessDashboard() {
 							<input
 								type="text"
 								placeholder="e.g. Ground Floor, Shop 12"
-								value={form.floor_unit}
+								value={form.location.floor_unit}
 								onChange={(e) =>
 									setForm((prev) => ({
 										...prev,
-										floor_unit: e.target.value,
+										location: {
+											...prev.location,
+											floor_unit: e.target.value,
+										},
 									}))
 								}
 								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"

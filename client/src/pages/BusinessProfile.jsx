@@ -23,6 +23,7 @@ import StarRating from "../components/common/StarRating";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import { useCart } from "../lib/context/CartContext";
+import SingleLocationMap from "../components/common/map/SingleLocationMap";
 
 // Category display names and icons mapping
 const CATEGORY_CONFIG = {
@@ -798,6 +799,21 @@ export default function BusinessProfile() {
 									{business.description ||
 										"No description available."}
 								</p>
+							</div>
+
+							{/* Location Map - ADD THIS */}
+							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+									<MapPin
+										size={16}
+										className="text-orange-500"
+									/>
+									Location Map
+								</h3>
+								<SingleLocationMap
+									business={business}
+									height="250px"
+								/>
 							</div>
 
 							{/* Contact & Location */}

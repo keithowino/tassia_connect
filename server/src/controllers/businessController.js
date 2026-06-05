@@ -99,7 +99,11 @@ export const createBusiness = async (req, res) => {
 			location: {
 				address: location?.address || "",
 				floor_unit: location?.floor_unit || "",
-				label: location?.label || "Tassia Complex",
+				location_label: location?.location_label || "Tassia Complex",
+				coordinates: {
+					lat: location?.coordinates?.lat || 0,
+					lng: location?.coordinates?.lng || 0,
+				},
 			},
 			opening_time: opening_time || "08:00",
 			closing_time: closing_time || "20:00",
@@ -203,14 +207,6 @@ export const updateBusiness = async (req, res) => {
 			...(phone && { phone }),
 			...(whatsapp !== undefined && { whatsapp }),
 			...(website !== undefined && { website }),
-			...(location && {
-				location: {
-					address: location.address || business.location?.address,
-					floor_unit:
-						location.floor_unit || business.location?.floor_unit,
-					label: location.label || business.location?.label,
-				},
-			}),
 			...(opening_time && { opening_time }),
 			...(closing_time && { closing_time }),
 			...(open_days && { open_days }),
@@ -221,7 +217,29 @@ export const updateBusiness = async (req, res) => {
 			...(logo !== undefined && { logo }),
 		};
 
-		// Fix: Use returnDocument: 'after' instead of new: true
+		// Handle location update separately with proper coordinate parsing
+		if (location) {
+			updateData.location = {
+				address: location.address || business.location?.address || "",
+				floor_unit:
+					location.floor_unit || business.location?.floor_unit || "",
+				location_label:
+					location.location_label ||
+					business.location?.location_label ||
+					"Tassia Complex",
+				coordinates: {
+					lat:
+						location.coordinates?.lat !== undefined
+							? parseFloat(location.coordinates.lat)
+							: business.location?.coordinates?.lat || 0,
+					lng:
+						location.coordinates?.lng !== undefined
+							? parseFloat(location.coordinates.lng)
+							: business.location?.coordinates?.lng || 0,
+				},
+			};
+		}
+
 		const updated = await Business.findByIdAndUpdate(
 			req.params.id,
 			updateData,

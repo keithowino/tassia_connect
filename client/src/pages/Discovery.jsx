@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, X, Heart } from "lucide-react";
+import { SlidersHorizontal, X, Heart, List, Map } from "lucide-react";
 import { businessAPI, categoryAPI, favoritesAPI } from "../lib/api";
 import { useAuth } from "../lib/context/AuthContext";
 import SearchBar from "../components/business/SearchBar";
@@ -9,6 +9,7 @@ import BusinessCard from "../components/business/BusinessCard";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import { useCommon } from "../lib/context/CommonContext";
+import MapView from "../components/common/map/MapView";
 
 export default function Discovery() {
 	const { getDefaultIconForCategory, getDefaultColorForCategory } =
@@ -21,6 +22,7 @@ export default function Discovery() {
 	const [sortBy, setSortBy] = useState("rating");
 	const [deliveryOnly, setDeliveryOnly] = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
+	const [viewMode, setViewMode] = useState("list");
 
 	const { user } = useAuth();
 	const searchQuery = searchParams.get("q") || "";
@@ -97,33 +99,7 @@ export default function Discovery() {
 		fetchFavorites();
 	}, [user]);
 
-	// // Handle toggling favorites
-	// const handleToggleFavorite = async (businessId) => {
-	// 	if (!user) {
-	// 		// Redirect to login or show message
-	// 		alert("Please login to save favorites");
-	// 		return;
-	// 	}
-
-	// 	try {
-	// 		if (favorites.has(businessId)) {
-	// 			// Remove from favorites
-	// 			await favoritesAPI.removeFavorite(businessId);
-	// 			setFavorites((prev) => {
-	// 				const newSet = new Set(prev);
-	// 				newSet.delete(businessId);
-	// 				return newSet;
-	// 			});
-	// 		} else {
-	// 			// Add to favorites
-	// 			await favoritesAPI.addFavorite(businessId);
-	// 			setFavorites((prev) => new Set([...prev, businessId]));
-	// 		}
-	// 	} catch (error) {
-	// 		console.error("Error toggling favorite:", error);
-	// 	}
-	// };
-
+	// Handle toggling favorites
 	const handleToggleFavorite = async (businessId) => {
 		if (!user) {
 			alert("Please login to save favorites");
@@ -401,47 +377,68 @@ export default function Discovery() {
 					}
 				/>
 
-				{/* Results Info */}
-				<div className="flex items-center justify-between flex-wrap gap-2">
-					<p className="text-sm text-gray-500">
-						{loading
-							? "Loading..."
-							: `${filteredAndSortedBusinesses.length} business${filteredAndSortedBusinesses.length !== 1 ? "es" : ""} found`}
-					</p>
-					{hasActiveFilters && (
+				{/* View Mode Toggle - ADD THIS */}
+				<div className="flex items-center justify-between">
+					<div className="inline-flex gap-1 bg-gray-100 rounded-xl p-1">
 						<button
-							onClick={clearAllFilters}
-							className="text-sm text-orange-500 flex items-center gap-1 hover:text-orange-600 transition-colors"
+							onClick={() => setViewMode("list")}
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+								viewMode === "list"
+									? "bg-white text-orange-500 shadow-sm"
+									: "text-gray-500 hover:text-gray-700"
+							}`}
 						>
-							<X size={13} /> Clear all filters
+							<List size={16} /> List
 						</button>
-					)}
+						<button
+							onClick={() => setViewMode("map")}
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+								viewMode === "map"
+									? "bg-white text-orange-500 shadow-sm"
+									: "text-gray-500 hover:text-gray-700"
+							}`}
+						>
+							<Map size={16} /> Map
+						</button>
+					</div>
+					<p className="flex gap-2 text-sm text-gray-500">
+						<div>
+							{filteredAndSortedBusinesses.length} business
+							{filteredAndSortedBusinesses.length !== 1
+								? "es"
+								: ""}{" "}
+							found
+						</div>
+						<div>
+							{hasActiveFilters && (
+								<button
+									onClick={clearAllFilters}
+									className="text-sm text-orange-500 flex items-center gap-1 hover:text-orange-600 transition-colors"
+								>
+									<X size={13} /> Clear all filters
+								</button>
+							)}
+						</div>
+					</p>
 				</div>
 
-				{/* Results Grid */}
+				{/* Rest of your content - either list or map view */}
 				{loading ? (
 					<div className="flex justify-center py-16">
 						<LoadingSpinner size="lg" />
 					</div>
+				) : viewMode === "map" ? (
+					<MapView
+						businesses={filteredAndSortedBusinesses}
+						onSelectBusiness={(business) => {
+							window.location.href = `/business/${business.slug}`;
+						}}
+						height="500px"
+					/>
 				) : filteredAndSortedBusinesses.length === 0 ? (
+					// Empty state
 					<div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
-						<div className="text-4xl mb-3">🔍</div>
-						<p className="font-semibold text-gray-800 text-lg">
-							No businesses found
-						</p>
-						<p className="text-gray-500 text-sm mt-1 max-w-md mx-auto">
-							{searchQuery || selectedCategory
-								? "Try adjusting your search or category filters"
-								: "Be the first to register a business in Tassia!"}
-						</p>
-						{!searchQuery && !selectedCategory && (
-							<Link
-								to="/dashboard/new"
-								className="mt-4 inline-block bg-orange-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-orange-600 transition-colors"
-							>
-								Register Your Business
-							</Link>
-						)}
+						{/* Empty state content */}
 					</div>
 				) : (
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
