@@ -77,7 +77,6 @@ export const orderAPI = {
 
 // Community API
 export const communityAPI = {
-	// getRecent: (limit = 10) => api.get(`/community/posts?limit=${limit}`),
 	getAll: async (page = 1, limit = 20) => {
 		try {
 			const response = await api.get(
@@ -105,6 +104,16 @@ export const communityAPI = {
 	update: (id, data) => api.put(`/community/posts/${id}`, data),
 	delete: (id) => api.delete(`/community/posts/${id}`),
 	togglePin: (id) => api.patch(`/community/posts/${id}/pin`),
+	addReaction: (postId, reactionType) =>
+		api.post(`/community/posts/${postId}/${reactionType}`),
+	removeReaction: (postId, reactionType) =>
+		api.delete(`/community/posts/${postId}/${reactionType}`),
+	addComment: (postId, content) =>
+		api.post(`/community/posts/${postId}/comments`, { content }),
+	deleteComment: (postId, commentId) =>
+		api.delete(`/community/posts/${postId}/comments/${commentId}`),
+	customRequest: (endpoint, method, data) =>
+		api({ method, url: endpoint, data }), // Custom request for flexibility
 };
 
 // Category API
@@ -241,6 +250,25 @@ export const reviewAPI = {
 	create: (data) => api.post("/reviews", data),
 	delete: (id) => api.delete(`/reviews/${id}`),
 	update: (id, data) => api.put(`/reviews/${id}`, data),
+	addLike: (reviewId) => api.post(`/reviews/${reviewId}/like`),
+	addDislike: (reviewId) => api.post(`/reviews/${reviewId}/dislike`),
+	addComment: (reviewId, content) =>
+		api.post(`/reviews/${reviewId}/comments`, { content }),
+	deleteComment: (reviewId, commentId) =>
+		api.delete(`/reviews/${reviewId}/comments/${commentId}`),
+};
+
+// Upload API
+export const uploadAPI = {
+	uploadSingle: (formData) =>
+		api.post("/upload/single", formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		}),
+	uploadMultiple: (formData) =>
+		api.post("/upload/multiple", formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		}),
+	deleteImage: (publicId) => api.delete(`/upload/${publicId}`),
 };
 
 export default api;

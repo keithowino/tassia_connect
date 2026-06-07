@@ -24,6 +24,15 @@ const reviewSchema = new mongoose.Schema(
 			trim: true,
 			maxlength: 1000,
 		},
+		likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+		dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+		comments: [
+			{
+				userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+				content: { type: String, required: true, maxlength: 500 },
+				createdAt: { type: Date, default: Date.now },
+			},
+		],
 		isVerified: {
 			type: Boolean,
 			default: false,
@@ -41,6 +50,22 @@ const reviewSchema = new mongoose.Schema(
 		timestamps: true,
 	},
 );
+
+// Virtuals
+reviewSchema.virtual("likesCount").get(function () {
+	return this.likes?.length || 0;
+});
+
+reviewSchema.virtual("dislikesCount").get(function () {
+	return this.dislikes?.length || 0;
+});
+
+reviewSchema.virtual("commentsCount").get(function () {
+	return this.comments?.length || 0;
+});
+
+reviewSchema.set("toJSON", { virtuals: true });
+reviewSchema.set("toObject", { virtuals: true });
 
 // Ensure a user can only review a business once
 reviewSchema.index({ businessId: 1, userId: 1 }, { unique: true });

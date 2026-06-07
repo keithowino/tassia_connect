@@ -7,7 +7,8 @@
 		"modifyCategories": "node src/seeder/seed-categories.js",
 		"traceWarnings": "nodemon --exec \"node --trace-warnings\" src/server.js",
 		"start": "node src/server.js",
-		"dev": "nodemon src/server.js"
+		"dev": "nodemon src/server.js",
+		"build": "echo 'No build step needed for server'"
 	},
 	"keywords": [],
 	"author": "",
@@ -15,12 +16,14 @@
 	"type": "module",
 	"dependencies": {
 		"bcryptjs": "^3.0.3",
+		"cloudinary": "^1.41.3",
 		"cors": "^2.8.6",
 		"dotenv": "^17.4.2",
 		"express": "^5.2.1",
 		"jsonwebtoken": "^9.0.3",
 		"mongoose": "^9.6.3",
-		"multer": "^2.1.1"
+		"multer": "^2.1.1",
+		"multer-storage-cloudinary": "^4.0.0"
 	},
 	"devDependencies": {
 		"nodemon": "^3.1.14"

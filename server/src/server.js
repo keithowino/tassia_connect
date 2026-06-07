@@ -13,6 +13,7 @@ import favoriteRoutes from "./routes/favoriteRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 /*
 // recommended for use only during development.
@@ -33,6 +34,9 @@ const requiredEnvVars = [
 	"NODE_ENV",
 	"JWT_EXPIRES_IN",
 	"CLIENT_URL",
+	"CLOUDINARY_CLOUD_NAME",
+	"CLOUDINARY_API_KEY",
+	"CLOUDINARY_API_SECRET",
 ];
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
@@ -68,6 +72,7 @@ app.use("/api/favorites", favoriteRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

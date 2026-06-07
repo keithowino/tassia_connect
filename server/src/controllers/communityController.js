@@ -160,3 +160,125 @@ export const togglePin = async (req, res) => {
 		res.status(500).json({ message: error.message });
 	}
 };
+
+// Toggle like on post
+export const togglePostLike = async (req, res) => {
+	try {
+		const post = await CommunityPost.findById(req.params.id);
+		if (!post) return res.status(404).json({ message: "Post not found" });
+
+		const userId = req.user._id;
+		const likedIndex = post.likes.indexOf(userId);
+		const dislikedIndex = post.dislikes.indexOf(userId);
+
+		let action = "added";
+
+		if (likedIndex !== -1) {
+			post.likes.splice(likedIndex, 1);
+			action = "removed";
+		} else {
+			if (dislikedIndex !== -1) post.dislikes.splice(dislikedIndex, 1);
+			post.likes.push(userId);
+			action = "added";
+		}
+
+		await post.save();
+		res.json({
+			action,
+			likesCount: post.likes.length,
+			dislikesCount: post.dislikes.length,
+		});
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Toggle dislike on post
+export const togglePostDislike = async (req, res) => {
+	try {
+		const post = await CommunityPost.findById(req.params.id);
+		if (!post) return res.status(404).json({ message: "Post not found" });
+
+		const userId = req.user._id;
+		const dislikedIndex = post.dislikes.indexOf(userId);
+		const likedIndex = post.likes.indexOf(userId);
+
+		let action = "added";
+
+		if (dislikedIndex !== -1) {
+			post.dislikes.splice(dislikedIndex, 1);
+			action = "removed";
+		} else {
+			if (likedIndex !== -1) post.likes.splice(likedIndex, 1);
+			post.dislikes.push(userId);
+			action = "added";
+		}
+
+		await post.save();
+		res.json({
+			action,
+			likesCount: post.likes.length,
+			dislikesCount: post.dislikes.length,
+		});
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Add comment to post
+export const addPostComment = async (req, res) => {
+	try {
+		const post = await CommunityPost.findById(req.params.id);
+		if (!post) return res.status(404).json({ message: "Post not found" });
+
+		const newComment = {
+			userId: req.user._id,
+			content: req.body.content,
+			createdAt: new Date(),
+		};
+
+		post.comments.push(newComment);
+		post.commentsCount = post.comments.length;
+		await post.save();
+
+		const populatedPost = await CommunityPost.findById(
+			req.params.id,
+		).populate("comments.userId", "fullName");
+		const addedComment =
+			populatedPost.comments[populatedPost.comments.length - 1];
+
+		res.status(201).json(addedComment);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Delete comment from post
+export const deletePostComment = async (req, res) => {
+	try {
+		const post = await CommunityPost.findById(req.params.id);
+		if (!post) return res.status(404).json({ message: "Post not found" });
+
+		const commentIndex = post.comments.findIndex(
+			(c) => c._id.toString() === req.params.commentId,
+		);
+		if (commentIndex === -1)
+			return res.status(404).json({ message: "Comment not found" });
+
+		if (
+			post.comments[commentIndex].userId.toString() !==
+				req.user._id.toString() &&
+			req.user.role !== "admin"
+		) {
+			return res.status(403).json({ message: "Not authorized" });
+		}
+
+		post.comments.splice(commentIndex, 1);
+		post.commentsCount = post.comments.length;
+		await post.save();
+
+		res.json({ message: "Comment deleted" });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};

@@ -5,6 +5,115 @@ import { useAuth } from "../lib/context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import { useCommon } from "../lib/context/CommonContext";
+import ReactionBar from "../components/common/ReactionBar";
+import CommentSection from "../components/common/CommentSection";
+
+function PostCard({
+	post,
+	user,
+	onDelete,
+	onReact,
+	onAddComment,
+	onDeleteComment,
+	formatDate,
+	typeColors,
+}) {
+	const [showComments, setShowComments] = useState(false);
+
+	return (
+		<div
+			className={`bg-white rounded-2xl border p-4 transition-all hover:shadow-sm ${
+				post.pinned
+					? "border-orange-200 bg-orange-50/30"
+					: "border-gray-100"
+			}`}
+		>
+			<div className="flex items-start gap-3">
+				{/* Avatar */}
+				<div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+					<span className="text-white font-bold text-sm">
+						{post.author?.fullName?.[0]?.toUpperCase() ||
+							post.authorName?.[0]?.toUpperCase() ||
+							"C"}
+					</span>
+				</div>
+
+				{/* Post Content */}
+				<div className="flex-1 min-w-0">
+					{/* Post Tags */}
+					<div className="flex items-center gap-2 flex-wrap">
+						<span
+							className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize flex items-center gap-0.5 ${
+								typeColors[post.type] || typeColors.general
+							}`}
+						>
+							<Tag size={10} /> {post.type || "general"}
+						</span>
+						{post.pinned && (
+							<span className="text-xs text-orange-500 font-medium flex items-center gap-0.5">
+								<Pin size={10} /> Pinned
+							</span>
+						)}
+					</div>
+
+					{/* Title */}
+					<h3 className="font-bold text-gray-900 mt-1 text-sm">
+						{post.title}
+					</h3>
+
+					{/* Content */}
+					<p className="text-gray-600 text-sm mt-1 leading-relaxed whitespace-pre-wrap">
+						{post.content}
+					</p>
+
+					{/* Footer */}
+					<div className="flex items-center justify-between mt-2">
+						<p className="text-xs text-gray-400">
+							{post.author?.fullName ||
+								post.authorName ||
+								"Community Member"}{" "}
+							· {formatDate(post.createdAt)}
+						</p>
+						{user && user._id === post.authorId && (
+							<button
+								onClick={() => onDelete(post._id)}
+								className="text-xs text-red-400 hover:text-red-600 transition-colors"
+							>
+								Delete
+							</button>
+						)}
+					</div>
+
+					{/* Reaction Bar - Now using likesCount, dislikesCount */}
+					<ReactionBar
+						targetId={post._id}
+						targetType="post"
+						likes={post.likesCount || 0}
+						dislikes={post.dislikesCount || 0}
+						commentsCount={post.commentsCount || 0}
+						userReaction={null} // We need to track this separately
+						onReact={onReact}
+						onCommentToggle={() => setShowComments(!showComments)}
+						commentsOpen={showComments}
+						size="sm"
+					/>
+
+					{/* Comment Section */}
+					{showComments && (
+						<CommentSection
+							targetId={post._id}
+							targetType="post"
+							comments={post.comments || []}
+							onAddComment={onAddComment}
+							onDeleteComment={onDeleteComment}
+							currentUser={user}
+						/>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
 
 export default function Community() {
 	const { typeOptions, typeColors } = useCommon();
@@ -21,6 +130,7 @@ export default function Community() {
 	const [error, setError] = useState(null);
 	const { user } = useAuth();
 
+	// Fetch posts from API
 	const fetchPosts = async () => {
 		setLoading(true);
 		setError(null);
@@ -32,16 +142,22 @@ export default function Community() {
 				response = await communityAPI.getAll();
 			}
 
-			// Transform posts to match frontend expectations
-			const transformedPosts = response.data.map((post) => ({
+			// Response data is already the posts array (from our API wrapper)
+			const postsData = response.data || [];
+
+			// Transform posts to ensure consistent data structure
+			const transformedPosts = postsData.map((post) => ({
 				_id: post._id,
-				id: post._id,
 				title: post.title,
 				content: post.content,
 				type: post.type,
 				pinned: post.pinned,
 				createdAt: post.createdAt,
 				authorId: post.authorId?._id || post.authorId,
+				likesCount: post.likesCount || post.likes?.length || 0,
+				dislikesCount: post.dislikesCount || post.dislikes?.length || 0,
+				commentsCount: post.commentsCount || post.comments?.length || 0,
+				comments: post.comments || [],
 				author: post.authorId
 					? {
 							fullName: post.authorId.fullName,
@@ -64,10 +180,12 @@ export default function Community() {
 		}
 	};
 
+	// Refetch when selectedType changes
 	useEffect(() => {
 		fetchPosts();
 	}, [selectedType]);
 
+	// Create new post
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		if (!user) {
@@ -91,22 +209,7 @@ export default function Community() {
 			});
 
 			// Add the new post to the list
-			const newPost = {
-				_id: response.data._id,
-				id: response.data._id,
-				title: response.data.title,
-				content: response.data.content,
-				type: response.data.type,
-				pinned: false,
-				createdAt: response.data.createdAt,
-				authorId: user._id,
-				author: {
-					fullName: user.fullName,
-					email: user.email,
-				},
-				authorName: user.fullName,
-			};
-
+			const newPost = response.data;
 			setPosts((prev) => [newPost, ...prev]);
 			setForm({ title: "", content: "", type: "general" });
 			setShowForm(false);
@@ -121,6 +224,7 @@ export default function Community() {
 		}
 	};
 
+	// Delete post
 	const handleDelete = async (postId) => {
 		if (!user) return;
 		if (!window.confirm("Are you sure you want to delete this post?"))
@@ -132,8 +236,180 @@ export default function Community() {
 		} catch (error) {
 			console.error("Error deleting post:", error);
 			setError(error.response?.data?.message || "Failed to delete post");
-			// Refresh posts to ensure consistency
+			fetchPosts(); // Refresh to ensure consistency
+		}
+	};
+
+	// Handle like/dislike reaction
+	const handleReaction = async (
+		targetId,
+		targetType,
+		reaction,
+		action,
+		currentReaction,
+	) => {
+		if (!user) {
+			alert("Please login to react to posts");
+			throw new Error("Not authenticated");
+		}
+
+		try {
+			// Find the post to update
+			const post = posts.find((p) => p._id === targetId);
+			if (!post) throw new Error("Post not found");
+
+			// Calculate optimistic values
+			let newLikes = post.likesCount || post.likes?.length || 0;
+			let newDislikes = post.dislikesCount || post.dislikes?.length || 0;
+
+			if (reaction === "like") {
+				if (action === "remove") {
+					newLikes = Math.max(0, newLikes - 1);
+				} else {
+					newLikes = newLikes + 1;
+					// Remove dislike if switching
+					if (currentReaction === "dislike") {
+						newDislikes = Math.max(0, newDislikes - 1);
+					}
+				}
+			} else {
+				if (action === "remove") {
+					newDislikes = Math.max(0, newDislikes - 1);
+				} else {
+					newDislikes = newDislikes + 1;
+					// Remove like if switching
+					if (currentReaction === "like") {
+						newLikes = Math.max(0, newLikes - 1);
+					}
+				}
+			}
+
+			// Update UI optimistically
+			setPosts((prev) =>
+				prev.map((p) =>
+					p._id === targetId
+						? {
+								...p,
+								likesCount: newLikes,
+								dislikesCount: newDislikes,
+							}
+						: p,
+				),
+			);
+
+			// Make the API call using communityAPI methods
+			if (action === "remove") {
+				// Remove reaction
+				await communityAPI.removeReaction(targetId, reaction);
+			} else {
+				// Add reaction
+				const response = await communityAPI.addReaction(
+					targetId,
+					reaction,
+				);
+				return response.data;
+			}
+
+			return { likesCount: newLikes, dislikesCount: newDislikes };
+		} catch (error) {
+			console.error("Reaction error:", error);
+			// Revert optimistic update on error
 			fetchPosts();
+			alert("Failed to update reaction. Please try again.");
+			throw error;
+		}
+	};
+
+	// Add comment to post
+	const handleAddComment = async (targetId, targetType, content) => {
+		if (!user) {
+			alert("Please login to comment");
+			throw new Error("Not authenticated");
+		}
+
+		try {
+			// Find the post
+			const post = posts.find((p) => p._id === targetId);
+			if (!post) throw new Error("Post not found");
+
+			// Create temp comment for optimistic update
+			const tempComment = {
+				_id: `temp-${Date.now()}`,
+				userId: { _id: user._id, fullName: user.fullName },
+				content: content,
+				createdAt: new Date().toISOString(),
+			};
+
+			// Update UI optimistically
+			setPosts((prev) =>
+				prev.map((p) =>
+					p._id === targetId
+						? {
+								...p,
+								comments: [...(p.comments || []), tempComment],
+								commentsCount: (p.commentsCount || 0) + 1,
+							}
+						: p,
+				),
+			);
+
+			// Make API call using communityAPI
+			const response = await communityAPI.addComment(targetId, content);
+
+			// Replace temp comment with real comment
+			setPosts((prev) =>
+				prev.map((p) =>
+					p._id === targetId
+						? {
+								...p,
+								comments: (p.comments || []).map((c) =>
+									c._id === tempComment._id
+										? response.data
+										: c,
+								),
+							}
+						: p,
+				),
+			);
+
+			return response.data;
+		} catch (error) {
+			console.error("Add comment error:", error);
+			// Revert optimistic update
+			fetchPosts();
+			alert("Failed to add comment. Please try again.");
+			throw error;
+		}
+	};
+
+	// Delete comment from post using communityAPI
+	const handleDeleteComment = async (targetId, targetType, commentId) => {
+		try {
+			// Update UI optimistically (remove comment)
+			setPosts((prev) =>
+				prev.map((p) =>
+					p._id === targetId
+						? {
+								...p,
+								comments: (p.comments || []).filter(
+									(c) => c._id !== commentId,
+								),
+								commentsCount: Math.max(
+									0,
+									(p.commentsCount || 1) - 1,
+								),
+							}
+						: p,
+				),
+			);
+
+			// Make API call using communityAPI
+			await communityAPI.deleteComment(targetId, commentId);
+		} catch (error) {
+			console.error("Delete comment error:", error);
+			// Revert optimistic update
+			fetchPosts();
+			alert("Failed to delete comment. Please try again.");
 		}
 	};
 
@@ -358,79 +634,17 @@ export default function Community() {
 				) : (
 					<div className="space-y-3">
 						{posts.map((post) => (
-							<div
+							<PostCard
 								key={post._id}
-								className={`bg-white rounded-2xl border p-4 transition-all hover:shadow-sm ${
-									post.pinned
-										? "border-orange-200 bg-orange-50/30"
-										: "border-gray-100"
-								}`}
-							>
-								<div className="flex items-start gap-3">
-									{/* Avatar */}
-									<div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-										<span className="text-white font-bold text-sm">
-											{post.author?.fullName?.[0]?.toUpperCase() ||
-												post.authorName?.[0]?.toUpperCase() ||
-												"C"}
-										</span>
-									</div>
-
-									{/* Post Content */}
-									<div className="flex-1 min-w-0">
-										{/* Post Tags */}
-										<div className="flex items-center gap-2 flex-wrap">
-											<span
-												className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize flex items-center gap-0.5 ${
-													typeColors[post.type] ||
-													typeColors.general
-												}`}
-											>
-												<Tag size={10} />{" "}
-												{post.type || "general"}
-											</span>
-											{post.pinned && (
-												<span className="text-xs text-orange-500 font-medium flex items-center gap-0.5">
-													<Pin size={10} /> Pinned
-												</span>
-											)}
-										</div>
-
-										{/* Title */}
-										<h3 className="font-bold text-gray-900 mt-1 text-sm">
-											{post.title}
-										</h3>
-
-										{/* Content */}
-										<p className="text-gray-600 text-sm mt-1 leading-relaxed whitespace-pre-wrap">
-											{post.content}
-										</p>
-
-										{/* Footer */}
-										<div className="flex items-center justify-between mt-2">
-											<p className="text-xs text-gray-400">
-												{post.author?.fullName ||
-													post.authorName ||
-													"Community Member"}{" "}
-												· {formatDate(post.createdAt)}
-											</p>
-											{user &&
-												user._id === post.authorId && (
-													<button
-														onClick={() =>
-															handleDelete(
-																post._id,
-															)
-														}
-														className="text-xs text-red-400 hover:text-red-600 transition-colors"
-													>
-														Delete
-													</button>
-												)}
-										</div>
-									</div>
-								</div>
-							</div>
+								post={post}
+								user={user}
+								onDelete={handleDelete}
+								onReact={handleReaction}
+								onAddComment={handleAddComment}
+								onDeleteComment={handleDeleteComment}
+								formatDate={formatDate}
+								typeColors={typeColors}
+							/>
 						))}
 					</div>
 				)}

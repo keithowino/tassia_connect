@@ -11,11 +11,13 @@ import {
 	X,
 	Mail,
 	Calendar,
+	Camera,
 } from "lucide-react";
 import { useAuth } from "../lib/context/AuthContext";
-import { businessAPI, favoritesAPI, userAPI } from "../lib/api";
+import { businessAPI, favoritesAPI, userAPI, uploadAPI } from "../lib/api";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import BusinessCard from "../components/business/BusinessCard";
+import ImageUploader from "../components/common/ImageUploader";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import data from "../lib/data";
 
@@ -30,9 +32,11 @@ export default function Profile() {
 		fullName: "",
 		phoneNumber: "",
 		location: "",
+		profileImage: "",
 	});
 	const [saving, setSaving] = useState(false);
 	const [activeTab, setActiveTab] = useState("favorites");
+	const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
 	// Redirect if not logged in
 	useEffect(() => {
@@ -46,6 +50,7 @@ export default function Profile() {
 			fullName: profile?.fullName || user?.fullName || "",
 			phoneNumber: profile?.phoneNumber || user?.phoneNumber || "",
 			location: profile?.location || user?.location || "",
+			profileImage: profile?.profileImage || user?.profileImage || "",
 		});
 	}, [user, profile, navigate]);
 
@@ -70,7 +75,6 @@ export default function Profile() {
 				// Fetch full business details for favorites
 				const favoriteDetails = [];
 				for (const biz of favoriteBusinesses) {
-					// If business object is populated, use it; otherwise fetch
 					if (biz._id) {
 						favoriteDetails.push(biz);
 					}
@@ -90,6 +94,37 @@ export default function Profile() {
 		fetchUserData();
 	}, [user]);
 
+	const handleAvatarUpload = async (url) => {
+		if (!url) return;
+
+		setUploadingAvatar(true);
+		try {
+			// Update profile with new avatar URL
+			const response = await userAPI.updateProfile({
+				fullName: editForm.fullName,
+				phoneNumber: editForm.phoneNumber,
+				location: editForm.location,
+				profileImage: url,
+			});
+
+			// Update local state
+			setEditForm((prev) => ({ ...prev, profileImage: url }));
+
+			// Refresh user data
+			await refreshProfile();
+
+			console.log("Avatar updated successfully");
+		} catch (error) {
+			console.error("Error updating avatar:", error);
+			alert(
+				error.response?.data?.message ||
+					"Failed to update profile picture",
+			);
+		} finally {
+			setUploadingAvatar(false);
+		}
+	};
+
 	const handleSaveProfile = async () => {
 		if (!user) return;
 		setSaving(true);
@@ -99,6 +134,7 @@ export default function Profile() {
 				fullName: editForm.fullName,
 				phoneNumber: editForm.phoneNumber,
 				location: editForm.location,
+				profileImage: editForm.profileImage,
 			});
 
 			// Refresh user data
@@ -138,7 +174,12 @@ export default function Profile() {
 	};
 
 	const getUserAvatar = () => {
-		return profile?.profileImage || user?.profileImage || null;
+		return (
+			editForm.profileImage ||
+			profile?.profileImage ||
+			user?.profileImage ||
+			null
+		);
 	};
 
 	const formatDate = (dateString) => {
@@ -175,25 +216,87 @@ export default function Profile() {
 				{/* Profile Card */}
 				<div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
 					<div className="flex items-start gap-4">
-						{/* Avatar */}
-						<div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
-							{getUserAvatar() ? (
-								<img
-									src={getUserAvatar()}
-									alt={getUserFullName()}
-									className="w-16 h-16 rounded-2xl object-cover"
-								/>
-							) : (
-								<span className="text-white font-extrabold text-2xl">
-									{getUserFullName()?.[0]?.toUpperCase() ||
-										"U"}
-								</span>
+						{/* Avatar with Upload Option */}
+						<div className="relative group">
+							<div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+								{getUserAvatar() ? (
+									<img
+										src={getUserAvatar()}
+										alt={getUserFullName()}
+										className="w-full h-full object-cover"
+									/>
+								) : (
+									<span className="text-white font-extrabold text-2xl">
+										{getUserFullName()?.[0]?.toUpperCase() ||
+											"U"}
+									</span>
+								)}
+							</div>
+
+							{/* Upload Button Overlay */}
+							{!editing && (
+								<label
+									htmlFor="avatar-upload"
+									className="absolute -bottom-1 -right-1 p-1.5 bg-orange-500 rounded-full text-white cursor-pointer hover:bg-orange-600 transition-colors shadow-md"
+								>
+									<Camera size={12} />
+									<input
+										id="avatar-upload"
+										type="file"
+										accept="image/*"
+										className="hidden"
+										onChange={async (e) => {
+											const file = e.target.files[0];
+											if (!file) return;
+
+											// Upload the file
+											const formData = new FormData();
+											formData.append("image", file);
+
+											try {
+												const response =
+													await uploadAPI.uploadSingle(
+														formData,
+													);
+												if (response.data?.url) {
+													await handleAvatarUpload(
+														response.data.url,
+													);
+												}
+											} catch (err) {
+												console.error(
+													"Upload error:",
+													err,
+												);
+												alert("Failed to upload image");
+											}
+										}}
+									/>
+								</label>
 							)}
 						</div>
 
 						<div className="flex-1 min-w-0">
 							{editing ? (
-								<div className="space-y-2">
+								<div className="space-y-3">
+									{/* Avatar upload in edit mode */}
+									<div>
+										<label className="block text-xs font-semibold text-gray-600 mb-1">
+											Profile Picture
+										</label>
+										<ImageUploader
+											currentImage={editForm.profileImage}
+											onUploadComplete={(url) =>
+												setEditForm((p) => ({
+													...p,
+													profileImage: url || "",
+												}))
+											}
+											label=""
+											maxSize={2}
+										/>
+									</div>
+
 									<input
 										value={editForm.fullName}
 										onChange={(e) =>
@@ -243,6 +346,8 @@ export default function Profile() {
 													fullName: getUserFullName(),
 													phoneNumber: getUserPhone(),
 													location: getUserLocation(),
+													profileImage:
+														getUserAvatar(),
 												});
 											}}
 											className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"

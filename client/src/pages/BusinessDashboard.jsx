@@ -23,6 +23,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import data from "../lib/data";
 import OrdersTab from "../components/business/OrdersTab";
+import ImageUploader from "../components/common/ImageUploader";
 
 export default function BusinessDashboard() {
 	const { businessId } = useParams();
@@ -108,11 +109,9 @@ export default function BusinessDashboard() {
 			const fetchBusinessData = async () => {
 				setLoading(true);
 				try {
-					// Fetch business details
 					const businessRes = await businessAPI.getById(businessId);
 					const businessData = businessRes.data;
 
-					// Check if user owns this business
 					if (
 						businessData.ownerId?._id !== user?._id &&
 						profile?.role !== "admin"
@@ -122,7 +121,6 @@ export default function BusinessDashboard() {
 					}
 
 					setBusiness(businessData);
-
 					setForm({
 						businessName: businessData.businessName || "",
 						tagline: businessData.tagline || "",
@@ -132,15 +130,16 @@ export default function BusinessDashboard() {
 							address: businessData.location?.address || "",
 							floor_unit: businessData.location?.floor_unit || "",
 							location_label:
+								businessData.location?.location_label ||
 								businessData.location?.label ||
 								"Tassia Complex",
 							coordinates: {
 								lat:
 									businessData.location?.coordinates?.lat ||
-									0,
+									"",
 								lng:
 									businessData.location?.coordinates?.lng ||
-									0,
+									"",
 							},
 						},
 						phone: businessData.phone || "",
@@ -165,12 +164,10 @@ export default function BusinessDashboard() {
 						],
 					});
 
-					// Fetch products
 					const productsRes =
 						await productAPI.getByBusiness(businessId);
 					setProducts(productsRes.data || []);
 
-					// Fetch orders
 					const ordersRes =
 						await orderAPI.getBusinessOrders(businessId);
 					setOrders(ordersRes.data || []);
@@ -207,7 +204,6 @@ export default function BusinessDashboard() {
 			return;
 		}
 
-		// Show loading indicator
 		setSaving(true);
 
 		navigator.geolocation.getCurrentPosition(
@@ -296,9 +292,13 @@ export default function BusinessDashboard() {
 				delivery_available: form.delivery_available,
 				delivery_fee: form.delivery_fee,
 				min_order: form.min_order,
-				coverImage: form.cover_image,
-				logo: form.logo,
+				coverImage: form.cover_image, // Log this
+				logo: form.logo, // Log this
 			};
+
+			console.log("Saving payload:", JSON.stringify(payload, null, 2));
+			console.log("coverImage value:", form.cover_image);
+			console.log("logo value:", form.logo);
 
 			let response;
 			if (isNew) {
@@ -316,6 +316,74 @@ export default function BusinessDashboard() {
 		}
 	};
 
+	// Handle image upload completion with auto-save
+	const handleImageUpload = async (field, url) => {
+		console.log(`Updating ${field} with URL:`, url);
+
+		// Update form state
+		setForm((prev) => ({
+			...prev,
+			[field]: url || "",
+		}));
+
+		// Auto-save after image upload if business exists (not new)
+		if (!isNew && business) {
+			// Wait a bit for the form state to update
+			setTimeout(async () => {
+				try {
+					// Prepare payload with updated image
+					const payload = {
+						businessName: form.businessName,
+						tagline: form.tagline,
+						description: form.description,
+						category: form.category,
+						email: form.email,
+						phone: form.phone,
+						whatsapp: form.whatsapp,
+						website: form.website,
+						location: {
+							address: form.location?.address || "",
+							floor_unit: form.location?.floor_unit || "",
+							location_label:
+								form.location?.location_label ||
+								"Tassia Complex",
+							coordinates: {
+								lat: form.location?.coordinates?.lat
+									? parseFloat(form.location.coordinates.lat)
+									: 0,
+								lng: form.location?.coordinates?.lng
+									? parseFloat(form.location.coordinates.lng)
+									: 0,
+							},
+						},
+						opening_time: form.opening_time,
+						closing_time: form.closing_time,
+						open_days: form.open_days,
+						delivery_available: form.delivery_available,
+						delivery_fee: form.delivery_fee,
+						min_order: form.min_order,
+						coverImage:
+							field === "cover_image" ? url : form.cover_image,
+						logo: field === "logo" ? url : form.logo,
+					};
+
+					const response = await businessAPI.update(
+						business._id,
+						payload,
+					);
+					setBusiness(response.data);
+					console.log(`${field} saved successfully`);
+				} catch (error) {
+					console.error(`Error saving ${field}:`, error);
+					alert(
+						error.response?.data?.message ||
+							`Error saving ${field}`,
+					);
+				}
+			}, 100);
+		}
+	};
+
 	const handleAddProduct = async () => {
 		if (!business || !productForm.name.trim()) {
 			alert("Please enter a product name");
@@ -329,7 +397,7 @@ export default function BusinessDashboard() {
 				description: productForm.description,
 				price: productForm.price,
 				category: productForm.category,
-				image_url: productForm.image_url, // Will be converted to images array by backend
+				image_url: productForm.image_url,
 				isAvailable: productForm.isAvailable,
 				stock: productForm.stock,
 			};
@@ -365,7 +433,6 @@ export default function BusinessDashboard() {
 	};
 
 	const editProduct = (product) => {
-		// Get the first image from the images array or use existing image_url
 		const productImage =
 			product.images && product.images.length > 0
 				? product.images[0]
@@ -420,7 +487,6 @@ export default function BusinessDashboard() {
 	const getUserRole = () => profile?.role || user?.role || "user";
 	const isAdmin = getUserRole() === "admin";
 
-	// Helper function to get product image from images array or image_url
 	const getProductImage = (product) => {
 		if (product.images && product.images.length > 0) {
 			return product.images[0];
@@ -434,12 +500,13 @@ export default function BusinessDashboard() {
 		);
 	}
 
-	if (loading)
+	if (loading) {
 		return (
 			<div className="flex justify-center py-20">
 				<LoadingSpinner size="lg" />
 			</div>
 		);
+	}
 
 	return (
 		<>
@@ -447,8 +514,8 @@ export default function BusinessDashboard() {
 				title={isNew ? "Register Business" : "Business Dashboard"}
 				description={
 					isNew
-						? `List your business on ${data.metadata.name} to reach hundreds of local customers. Free registration for Tassia Complex businesses.`
-						: "Manage your business profile, products, orders, and analytics from your dashboard."
+						? `List your business on ${data.metadata.name} to reach hundreds of local customers.`
+						: "Manage your business profile, products, orders, and analytics."
 				}
 			/>
 			<section className="max-w-3xl mx-auto px-4 py-4 space-y-4 mb-20">
@@ -561,419 +628,474 @@ export default function BusinessDashboard() {
 				)}
 
 				{(tab === "settings" || isNew) && (
-					<div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4 shadow-sm">
-						<h2 className="font-bold text-gray-900 mb-3">
-							Business Details
-						</h2>
-
-						{/* Business Name */}
+					<div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-8">
 						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Business Name *
-							</label>
-							<input
-								type="text"
-								placeholder="e.g. Mama Njeri's Kitchen"
-								value={form.businessName}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										businessName: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-							/>
+							<h2 className="text-2xl font-bold text-gray-900 mb-1">
+								{isNew
+									? "Register Your Business"
+									: "Business Details"}
+							</h2>
+							<p className="text-gray-500 text-sm">
+								{isNew
+									? "Fill in your business information to get listed"
+									: "Update your business profile"}
+							</p>
 						</div>
 
-						{/* Tagline */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Tagline
-							</label>
-							<input
-								type="text"
-								placeholder="Short catchy description (e.g., Best coffee in town!)"
-								value={form.tagline}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										tagline: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
+						<div className="space-y-8">
+							{/* Basic Info */}
+							<div className="space-y-5">
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Business Name{" "}
+										<span className="text-red-500">*</span>
+									</label>
+									<input
+										type="text"
+										placeholder="e.g. Mama Njeri's Kitchen"
+										value={form.businessName}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												businessName: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+									/>
+								</div>
 
-						{/* Description */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Description
-							</label>
-							<textarea
-								placeholder="Tell customers about your business..."
-								value={form.description}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										description: e.target.value,
-									}))
-								}
-								rows={3}
-								className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-							/>
-						</div>
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Tagline
+									</label>
+									<input
+										type="text"
+										placeholder="Best coffee in Tassia Complex"
+										value={form.tagline}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												tagline: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
 
-						{/* Category */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Category
-							</label>
-							<select
-								value={form.category}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										category: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							>
-								<option value="">Select Category...</option>
-								{categories.map((c) => (
-									<option key={c._id} value={c.name}>
-										{c.name}
-									</option>
-								))}
-							</select>
-						</div>
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Description
+									</label>
+									<textarea
+										placeholder="Tell customers about your business..."
+										value={form.description}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												description: e.target.value,
+											}))
+										}
+										rows={4}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base resize-y focus:outline-none focus:border-orange-500"
+									/>
+								</div>
 
-						{/* Phone */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Phone
-							</label>
-							<input
-								type="tel"
-								placeholder="0712 345 678"
-								value={form.phone}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										phone: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Category
+									</label>
+									<select
+										value={form.category}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												category: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500 bg-white"
+									>
+										<option value="">
+											Select Category...
+										</option>
+										{categories.map((c) => (
+											<option key={c._id} value={c.name}>
+												{c.name}
+											</option>
+										))}
+									</select>
+								</div>
 
-						{/* WhatsApp */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								WhatsApp
-							</label>
-							<input
-								type="tel"
-								placeholder="254712345678 (include country code)"
-								value={form.whatsapp}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										whatsapp: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
+								{/* Website Field - ADD THIS */}
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Website
+									</label>
+									<input
+										type="url"
+										placeholder="https://yourbusiness.com"
+										value={form.website}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												website: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+							</div>
 
-						{/* Email */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Email
-							</label>
-							<input
-								type="email"
-								placeholder="contact@yourbusiness.com"
-								value={form.email}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										email: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
+							{/* Contact Info */}
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Phone
+									</label>
+									<input
+										type="tel"
+										placeholder="0712 345 678"
+										value={form.phone}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												phone: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										WhatsApp
+									</label>
+									<input
+										type="tel"
+										placeholder="254712345678"
+										value={form.whatsapp}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												whatsapp: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+							</div>
 
-						{/* Location Coordinates */}
-						<div className="grid grid-cols-3 gap-3">
 							<div>
-								<label className="block text-xs font-semibold text-gray-600 mb-1">
-									Latitude
+								<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+									Email
 								</label>
 								<input
-									type="text"
-									placeholder="e.g., -1.2921"
-									value={form.location.coordinates.lat || ""}
+									type="email"
+									placeholder="contact@yourbusiness.com"
+									value={form.email}
 									onChange={(e) =>
 										setForm((prev) => ({
 											...prev,
-											location: {
-												...prev.location,
-												coordinates: {
-													...prev.location
-														.coordinates,
-													lat: e.target.value,
-												},
-											},
+											email: e.target.value,
 										}))
 									}
-									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-								/>
-								<p className="text-[10px] text-gray-400 mt-0.5">
-									Get from Google Maps
-								</p>
-							</div>
-							<div>
-								<label className="block text-xs font-semibold text-gray-600 mb-1">
-									Longitude
-								</label>
-								<input
-									type="text"
-									placeholder="e.g., 36.8219"
-									value={form.location.coordinates.lng || ""}
-									onChange={(e) =>
-										setForm((prev) => ({
-											...prev,
-											location: {
-												...prev.location,
-												coordinates: {
-													...prev.location
-														.coordinates,
-													lng: e.target.value,
-												},
-											},
-										}))
-									}
-									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+									className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
 								/>
 							</div>
-							<div className="flex items-center justify-start">
+
+							{/* Location Section */}
+							<div className="space-y-5">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+									<div>
+										<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+											Latitude
+										</label>
+										<input
+											type="text"
+											placeholder="-1.2921"
+											value={
+												form.location.coordinates.lat ||
+												""
+											}
+											onChange={(e) =>
+												setForm((prev) => ({
+													...prev,
+													location: {
+														...prev.location,
+														coordinates: {
+															...prev.location
+																.coordinates,
+															lat: e.target.value,
+														},
+													},
+												}))
+											}
+											className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+										/>
+									</div>
+									<div>
+										<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+											Longitude
+										</label>
+										<input
+											type="text"
+											placeholder="36.8219"
+											value={
+												form.location.coordinates.lng ||
+												""
+											}
+											onChange={(e) =>
+												setForm((prev) => ({
+													...prev,
+													location: {
+														...prev.location,
+														coordinates: {
+															...prev.location
+																.coordinates,
+															lng: e.target.value,
+														},
+													},
+												}))
+											}
+											className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+										/>
+									</div>
+								</div>
+
 								<button
 									type="button"
 									onClick={getCurrentLocation}
 									disabled={saving}
-									className="w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50"
+									className="w-full bg-orange-50 hover:bg-orange-100 text-orange-600 font-medium py-3.5 rounded-2xl transition-colors flex items-center justify-center gap-2 text-sm"
 								>
+									📍{" "}
 									{saving
-										? "📍 Getting location..."
-										: "📍 Use My Location"}
+										? "Getting location..."
+										: "Use My Current Location"}
 								</button>
+
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Address
+									</label>
+									<input
+										type="text"
+										placeholder="Tassia Complex, Block B"
+										value={form.location.address}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												location: {
+													...prev.location,
+													address: e.target.value,
+												},
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Floor / Unit
+									</label>
+									<input
+										type="text"
+										placeholder="Ground Floor, Shop 12"
+										value={form.location.floor_unit}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												location: {
+													...prev.location,
+													floor_unit: e.target.value,
+												},
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+
+								{/* Location Label Field - ADD THIS */}
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Location Label
+									</label>
+									<input
+										type="text"
+										placeholder="e.g., Tassia Complex, Tassia Mall"
+										value={form.location.location_label}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												location: {
+													...prev.location,
+													location_label:
+														e.target.value,
+												},
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
 							</div>
-						</div>
 
-						{/* Address */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Address
-							</label>
-							<input
-								type="text"
-								placeholder="e.g. Tassia Complex, Block B"
-								value={form.location.address}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										location: {
-											...prev.location,
-											address: e.target.value,
-										},
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
-
-						{/* Floor / Unit */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Floor / Unit
-							</label>
-							<input
-								type="text"
-								placeholder="e.g. Ground Floor, Shop 12"
-								value={form.location.floor_unit}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										location: {
-											...prev.location,
-											floor_unit: e.target.value,
-										},
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
-
-						{/* Cover Image URL */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-1">
-								Cover Image URL
-							</label>
-							<input
-								type="url"
-								placeholder="https://..."
-								value={form.cover_image}
-								onChange={(e) =>
-									setForm((prev) => ({
-										...prev,
-										cover_image: e.target.value,
-									}))
-								}
-								className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-							/>
-						</div>
-
-						{/* Opening Hours */}
-						<div className="grid grid-cols-2 gap-3">
-							<div>
-								<label className="block text-xs font-semibold text-gray-600 mb-1">
-									Opens
-								</label>
-								<input
-									type="time"
-									value={form.opening_time}
-									onChange={(e) =>
-										setForm((prev) => ({
-											...prev,
-											opening_time: e.target.value,
-										}))
+							{/* Images */}
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+								<ImageUploader
+									currentImage={form.cover_image}
+									onUploadComplete={(url) =>
+										handleImageUpload("cover_image", url)
 									}
-									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+									label="Cover Image"
+									maxSize={5}
+								/>
+								<ImageUploader
+									currentImage={form.logo}
+									onUploadComplete={(url) =>
+										handleImageUpload("logo", url)
+									}
+									label="Business Logo"
+									maxSize={2}
 								/>
 							</div>
-							<div>
-								<label className="block text-xs font-semibold text-gray-600 mb-1">
-									Closes
-								</label>
-								<input
-									type="time"
-									value={form.closing_time}
-									onChange={(e) =>
-										setForm((prev) => ({
-											...prev,
-											closing_time: e.target.value,
-										}))
-									}
-									className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-								/>
-							</div>
-						</div>
 
-						{/* Open Days */}
-						<div>
-							<label className="block text-xs font-semibold text-gray-600 mb-2">
-								Open Days
-							</label>
-							<div className="flex gap-1.5 flex-wrap">
-								{DAYS.map((day) => (
-									<button
-										key={day}
-										type="button"
-										onClick={() => toggleDay(day)}
-										className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-											form.open_days.includes(day)
-												? "bg-orange-500 text-white"
-												: "bg-gray-100 text-gray-600"
+							{/* Opening Hours */}
+							<div className="grid grid-cols-2 gap-5">
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Opens At
+									</label>
+									<input
+										type="time"
+										value={form.opening_time}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												opening_time: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+								<div>
+									<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+										Closes At
+									</label>
+									<input
+										type="time"
+										value={form.closing_time}
+										onChange={(e) =>
+											setForm((prev) => ({
+												...prev,
+												closing_time: e.target.value,
+											}))
+										}
+										className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+									/>
+								</div>
+							</div>
+
+							{/* Open Days */}
+							<div>
+								<label className="block text-sm font-semibold text-gray-700 mb-3">
+									Open Days
+								</label>
+								<div className="flex flex-wrap gap-2">
+									{DAYS.map((day) => (
+										<button
+											key={day}
+											type="button"
+											onClick={() => toggleDay(day)}
+											className={`px-5 py-2 rounded-2xl text-sm font-medium transition-all ${
+												form.open_days.includes(day)
+													? "bg-orange-500 text-white shadow-sm"
+													: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+											}`}
+										>
+											{day}
+										</button>
+									))}
+								</div>
+							</div>
+
+							{/* Delivery Options */}
+							<div className="space-y-5">
+								<label className="flex items-center gap-3 cursor-pointer">
+									<div
+										onClick={() =>
+											setForm((prev) => ({
+												...prev,
+												delivery_available:
+													!prev.delivery_available,
+											}))
+										}
+										className={`w-11 h-6 rounded-full transition-colors relative ${
+											form.delivery_available
+												? "bg-orange-500"
+												: "bg-gray-300"
 										}`}
 									>
-										{day}
-									</button>
-								))}
+										<div
+											className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+												form.delivery_available
+													? "translate-x-6"
+													: "translate-x-0.5"
+											}`}
+										/>
+									</div>
+									<span className="font-medium text-gray-700">
+										Offer Delivery
+									</span>
+								</label>
+
+								{form.delivery_available && (
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+										<div>
+											<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+												Delivery Fee (KES)
+											</label>
+											<input
+												type="number"
+												value={form.delivery_fee}
+												onChange={(e) =>
+													setForm((prev) => ({
+														...prev,
+														delivery_fee: Number(
+															e.target.value,
+														),
+													}))
+												}
+												className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+											/>
+										</div>
+										<div>
+											<label className="block text-sm font-semibold text-gray-700 mb-1.5">
+												Minimum Order (KES)
+											</label>
+											<input
+												type="number"
+												value={form.min_order}
+												onChange={(e) =>
+													setForm((prev) => ({
+														...prev,
+														min_order: Number(
+															e.target.value,
+														),
+													}))
+												}
+												className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-orange-500"
+											/>
+										</div>
+									</div>
+								)}
 							</div>
 						</div>
 
-						{/* Delivery Available Toggle */}
-						<label className="flex items-center gap-2.5 cursor-pointer">
-							<div
-								onClick={() =>
-									setForm((prev) => ({
-										...prev,
-										delivery_available:
-											!prev.delivery_available,
-									}))
-								}
-								className={`w-10 h-6 rounded-full transition-colors relative cursor-pointer ${
-									form.delivery_available
-										? "bg-orange-500"
-										: "bg-gray-300"
-								}`}
-							>
-								<div
-									className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-										form.delivery_available
-											? "translate-x-5"
-											: "translate-x-1"
-									}`}
-								/>
-							</div>
-							<span className="text-sm text-gray-700 font-medium">
-								Offer Delivery
-							</span>
-						</label>
-
-						{/* Delivery Fee & Min Order */}
-						{form.delivery_available && (
-							<div className="grid grid-cols-2 gap-3">
-								<div>
-									<label className="block text-xs font-semibold text-gray-600 mb-1">
-										Delivery Fee (KES)
-									</label>
-									<input
-										type="number"
-										placeholder="Delivery Fee (KES)"
-										value={form.delivery_fee}
-										onChange={(e) =>
-											setForm((prev) => ({
-												...prev,
-												delivery_fee: Number(
-													e.target.value,
-												),
-											}))
-										}
-										className="border w-full border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-									/>
-								</div>
-
-								<div>
-									<label className="block text-xs font-semibold text-gray-600 mb-1">
-										Min Order (KES)
-									</label>
-									<input
-										type="number"
-										placeholder="Min Order (KES)"
-										value={form.min_order}
-										onChange={(e) =>
-											setForm((prev) => ({
-												...prev,
-												min_order: Number(
-													e.target.value,
-												),
-											}))
-										}
-										className="border w-full border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
-									/>
-								</div>
-							</div>
-						)}
-
-						{/* Submit Button */}
 						<button
 							onClick={handleSaveBusiness}
-							disabled={saving}
-							className="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+							disabled={saving || !form.businessName.trim()}
+							className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-4 rounded-2xl font-semibold text-lg transition-all flex items-center justify-center gap-2 shadow-sm"
 						>
-							<Save size={18} />{" "}
+							<Save size={22} />
 							{saving
 								? "Saving..."
 								: isNew
@@ -982,8 +1104,8 @@ export default function BusinessDashboard() {
 						</button>
 
 						{isNew && (
-							<p className="text-xs text-gray-400 text-center">
-								Your listing will be reviewed before going live
+							<p className="text-center text-xs text-gray-500">
+								Your business will be reviewed before going live
 							</p>
 						)}
 					</div>
@@ -1096,16 +1218,16 @@ export default function BusinessDashboard() {
 									<option value="services">Services</option>
 								</select>
 
-								<input
-									placeholder="Image URL"
-									value={productForm.image_url}
-									onChange={(e) =>
+								<ImageUploader
+									currentImage={productForm.image_url}
+									onUploadComplete={(url) =>
 										setProductForm((prev) => ({
 											...prev,
-											image_url: e.target.value,
+											image_url: url || "",
 										}))
 									}
-									className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400"
+									label="Product Image"
+									maxSize={2}
 								/>
 
 								<div className="grid grid-cols-2 gap-3">
@@ -1236,7 +1358,6 @@ export default function BusinessDashboard() {
 				)}
 
 				{tab === "orders" && business && (
-					// <div className="max-w-xl mx-auto px-4 py-6 mb-20">
 					<div className="max-w-xl mx-auto mb-20">
 						<OrdersTab
 							orders={orders}
@@ -1270,7 +1391,8 @@ export default function BusinessDashboard() {
 							</p>
 							<p className="text-sm text-gray-600">
 								<span className="font-medium">Location:</span>{" "}
-								{business.location?.label ||
+								{business.location?.location_label ||
+									business.location?.label ||
 									business.location?.address ||
 									"Not specified"}
 							</p>

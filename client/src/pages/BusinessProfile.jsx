@@ -16,6 +16,10 @@ import {
 	Plus,
 	Check,
 	Share2,
+	ThumbsUp,
+	ThumbsDown,
+	MessageSquare,
+	X,
 } from "lucide-react";
 import { useAuth } from "../lib/context/AuthContext";
 import { businessAPI, productAPI, reviewAPI, favoritesAPI } from "../lib/api";
@@ -24,6 +28,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import MetaDataInsert from "../lib/MetaDataInsert";
 import { useCart } from "../lib/context/CartContext";
 import SingleLocationMap from "../components/common/map/SingleLocationMap";
+import api from "../lib/api";
 
 // Category display names and icons mapping
 const CATEGORY_CONFIG = {
@@ -34,6 +39,342 @@ const CATEGORY_CONFIG = {
 	beauty: { icon: Package, label: "Beauty & Personal Care", color: "purple" },
 	services: { icon: Wrench, label: "Services", color: "green" },
 };
+
+// Review Card Component with reactions and comments
+function ReviewCard({
+	review,
+	user,
+	onLike,
+	onDislike,
+	onAddComment,
+	onDeleteComment,
+	formatDate,
+}) {
+	const [showComments, setShowComments] = useState(false);
+	const [commentText, setCommentText] = useState("");
+	const [submittingComment, setSubmittingComment] = useState(false);
+	const [likes, setLikes] = useState(review.likes?.length || 0);
+	const [dislikes, setDislikes] = useState(review.dislikes?.length || 0);
+	const [userLiked, setUserLiked] = useState(
+		user && review.likes?.includes(user._id),
+	);
+	const [userDisliked, setUserDisliked] = useState(
+		user && review.dislikes?.includes(user._id),
+	);
+	const [comments, setComments] = useState(review.comments || []);
+	const [isProcessing, setIsProcessing] = useState(false);
+
+	const handleLike = async () => {
+		if (!user) {
+			alert("Please login to like reviews");
+			return;
+		}
+		if (isProcessing) return;
+		setIsProcessing(true);
+
+		try {
+			if (userLiked) {
+				// Remove like
+				setLikes((prev) => Math.max(0, prev - 1));
+				setUserLiked(false);
+			} else {
+				// Add like (remove dislike if present)
+				setLikes((prev) => prev + 1);
+				setUserLiked(true);
+				if (userDisliked) {
+					setDislikes((prev) => Math.max(0, prev - 1));
+					setUserDisliked(false);
+				}
+			}
+
+			const result = await onLike(review._id);
+
+			// Sync with server response
+			if (result) {
+				setLikes(result.likesCount || 0);
+				setDislikes(result.dislikesCount || 0);
+				setUserLiked(result.userReaction === "like");
+				setUserDisliked(result.userReaction === "dislike");
+			}
+		} catch (error) {
+			console.error("Error liking review:", error);
+			// Revert optimistic update
+			setLikes(review.likes?.length || 0);
+			setDislikes(review.dislikes?.length || 0);
+			setUserLiked(user && review.likes?.includes(user._id));
+			setUserDisliked(user && review.dislikes?.includes(user._id));
+			alert("Failed to like review. Please try again.");
+		} finally {
+			setIsProcessing(false);
+		}
+	};
+
+	const handleDislike = async () => {
+		if (!user) {
+			alert("Please login to dislike reviews");
+			return;
+		}
+		if (isProcessing) return;
+		setIsProcessing(true);
+
+		try {
+			if (userDisliked) {
+				// Remove dislike
+				setDislikes((prev) => Math.max(0, prev - 1));
+				setUserDisliked(false);
+			} else {
+				// Add dislike (remove like if present)
+				setDislikes((prev) => prev + 1);
+				setUserDisliked(true);
+				if (userLiked) {
+					setLikes((prev) => Math.max(0, prev - 1));
+					setUserLiked(false);
+				}
+			}
+
+			const result = await onDislike(review._id);
+
+			// Sync with server response
+			if (result) {
+				setLikes(result.likesCount || 0);
+				setDislikes(result.dislikesCount || 0);
+				setUserLiked(result.userReaction === "like");
+				setUserDisliked(result.userReaction === "dislike");
+			}
+		} catch (error) {
+			console.error("Error disliking review:", error);
+			// Revert optimistic update
+			setLikes(review.likes?.length || 0);
+			setDislikes(review.dislikes?.length || 0);
+			setUserLiked(user && review.likes?.includes(user._id));
+			setUserDisliked(user && review.dislikes?.includes(user._id));
+			alert("Failed to dislike review. Please try again.");
+		} finally {
+			setIsProcessing(false);
+		}
+	};
+
+	const handleAddComment = async (e) => {
+		e.preventDefault();
+		if (!user) {
+			alert("Please login to comment");
+			return;
+		}
+		if (!commentText.trim()) return;
+
+		setSubmittingComment(true);
+		const tempComment = {
+			_id: `temp-${Date.now()}`,
+			userId: { _id: user._id, fullName: user.fullName },
+			content: commentText.trim(),
+			createdAt: new Date().toISOString(),
+		};
+
+		// Optimistic update
+		setComments((prev) => [...prev, tempComment]);
+		setCommentText("");
+
+		try {
+			const newComment = await onAddComment(
+				review._id,
+				commentText.trim(),
+			);
+			// Replace temp comment with real one
+			setComments((prev) =>
+				prev.map((c) => (c._id === tempComment._id ? newComment : c)),
+			);
+		} catch (error) {
+			console.error("Error adding comment:", error);
+			// Revert optimistic update
+			setComments((prev) =>
+				prev.filter((c) => c._id !== tempComment._id),
+			);
+			alert("Failed to add comment. Please try again.");
+		} finally {
+			setSubmittingComment(false);
+		}
+	};
+
+	const handleDeleteComment = async (commentId) => {
+		if (!window.confirm("Delete this comment?")) return;
+
+		// Optimistic update
+		const deletedComment = comments.find((c) => c._id === commentId);
+		setComments((prev) => prev.filter((c) => c._id !== commentId));
+
+		try {
+			await onDeleteComment(review._id, commentId);
+		} catch (error) {
+			console.error("Error deleting comment:", error);
+			// Revert optimistic update
+			if (deletedComment) {
+				setComments((prev) => [...prev, deletedComment]);
+			}
+			alert("Failed to delete comment. Please try again.");
+		}
+	};
+
+	return (
+		<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+			<div className="flex items-start gap-3">
+				<div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shrink-0">
+					<span className="text-white font-bold text-sm">
+						{review.userId?.fullName?.[0]?.toUpperCase() || "U"}
+					</span>
+				</div>
+				<div className="flex-1">
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<p className="font-semibold text-gray-900 text-sm">
+							{review.userId?.fullName || "User"}
+						</p>
+						<span className="text-xs text-gray-400">
+							{formatDate(review.createdAt)}
+						</span>
+					</div>
+					<StarRating
+						rating={review.rating}
+						size={14}
+						className="mt-1"
+					/>
+					{review.comment && (
+						<p className="text-gray-700 text-sm mt-2 leading-relaxed">
+							{review.comment}
+						</p>
+					)}
+
+					{/* Reaction Buttons */}
+					<div className="flex items-center gap-4 mt-3 pt-2 border-t border-gray-100">
+						<button
+							onClick={handleLike}
+							disabled={isProcessing}
+							className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full transition-all ${
+								userLiked
+									? "bg-orange-100 text-orange-600"
+									: "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+							}`}
+						>
+							<ThumbsUp
+								size={14}
+								className={userLiked ? "fill-orange-500" : ""}
+							/>
+							<span>{likes}</span>
+						</button>
+
+						<button
+							onClick={handleDislike}
+							disabled={isProcessing}
+							className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full transition-all ${
+								userDisliked
+									? "bg-gray-200 text-gray-700"
+									: "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+							}`}
+						>
+							<ThumbsDown
+								size={14}
+								className={userDisliked ? "fill-gray-600" : ""}
+							/>
+							<span>{dislikes}</span>
+						</button>
+
+						<button
+							onClick={() => setShowComments(!showComments)}
+							className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full transition-all ml-auto ${
+								showComments
+									? "bg-orange-100 text-orange-600"
+									: "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+							}`}
+						>
+							<MessageSquare size={14} />
+							<span>{comments.length} Comments</span>
+						</button>
+					</div>
+
+					{/* Comments Section */}
+					{showComments && (
+						<div className="mt-3 space-y-3">
+							{/* Add Comment Form */}
+							{user && (
+								<form
+									onSubmit={handleAddComment}
+									className="flex gap-2"
+								>
+									<input
+										type="text"
+										value={commentText}
+										onChange={(e) =>
+											setCommentText(e.target.value)
+										}
+										placeholder="Write a comment..."
+										maxLength={500}
+										className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400"
+									/>
+									<button
+										type="submit"
+										disabled={
+											submittingComment ||
+											!commentText.trim()
+										}
+										className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+									>
+										Post
+									</button>
+								</form>
+							)}
+
+							{/* Comments List */}
+							{comments.length === 0 ? (
+								<p className="text-xs text-gray-400 text-center py-2">
+									No comments yet. Be the first!
+								</p>
+							) : (
+								<div className="space-y-2 max-h-64 overflow-y-auto">
+									{comments.map((comment) => (
+										<div
+											key={comment._id}
+											className="bg-gray-50 rounded-xl p-3"
+										>
+											<div className="flex items-center justify-between">
+												<p className="text-xs font-semibold text-gray-800">
+													{comment.userId?.fullName ||
+														"User"}
+												</p>
+												<div className="flex items-center gap-2">
+													<span className="text-xs text-gray-400">
+														{formatDate(
+															comment.createdAt,
+														)}
+													</span>
+													{user &&
+														user._id ===
+															comment.userId
+																?._id && (
+															<button
+																onClick={() =>
+																	handleDeleteComment(
+																		comment._id,
+																	)
+																}
+																className="text-gray-400 hover:text-red-500 transition-colors"
+															>
+																<X size={12} />
+															</button>
+														)}
+												</div>
+											</div>
+											<p className="text-sm text-gray-700 mt-1">
+												{comment.content}
+											</p>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
 
 export default function BusinessProfile() {
 	const { slug } = useParams();
@@ -57,11 +398,9 @@ export default function BusinessProfile() {
 		const fetchBusinessData = async () => {
 			setLoading(true);
 			try {
-				// Fetch business by slug
 				const businessRes = await businessAPI.getBySlug(slug);
 				const businessData = businessRes.data;
 
-				// Check if business is active/verified
 				if (!businessData.isActive && !businessData.isVerified) {
 					setBusiness(null);
 					setLoading(false);
@@ -70,19 +409,16 @@ export default function BusinessProfile() {
 
 				setBusiness(businessData);
 
-				// Fetch products
 				const productsRes = await productAPI.getByBusiness(
 					businessData._id,
 				);
 				setProducts(productsRes.data || []);
 
-				// Fetch reviews
 				const reviewsRes = await reviewAPI.getByBusiness(
 					businessData._id,
 				);
 				setReviews(reviewsRes.data?.reviews || []);
 
-				// Check if favorited
 				if (user) {
 					try {
 						const favCheck = await favoritesAPI.checkFavorite(
@@ -155,12 +491,10 @@ export default function BusinessProfile() {
 				comment: reviewForm.comment,
 			});
 
-			// Add new review to list
 			const newReview = response.data;
 			setReviews((prev) => [newReview, ...prev]);
 			setReviewForm({ rating: 0, comment: "" });
 
-			// Refresh business to update rating
 			const updatedBusiness = await businessAPI.getBySlug(slug);
 			setBusiness(updatedBusiness.data);
 		} catch (error) {
@@ -172,6 +506,46 @@ export default function BusinessProfile() {
 			}
 		} finally {
 			setSubmittingReview(false);
+		}
+	};
+
+	// Review interaction handlers
+	const handleReviewLike = async (reviewId) => {
+		try {
+			const response = await reviewAPI.addLike(reviewId);
+			return response.data; // Returns { likesCount, dislikesCount, userReaction }
+		} catch (error) {
+			console.error("Error liking review:", error);
+			throw error;
+		}
+	};
+
+	const handleReviewDislike = async (reviewId) => {
+		try {
+			const response = await reviewAPI.addDislike(reviewId);
+			return response.data; // Returns { likesCount, dislikesCount, userReaction }
+		} catch (error) {
+			console.error("Error disliking review:", error);
+			throw error;
+		}
+	};
+
+	const handleAddReviewComment = async (reviewId, content) => {
+		try {
+			const response = await reviewAPI.addComment(reviewId, content);
+			return response.data;
+		} catch (error) {
+			console.error("Error adding review comment:", error);
+			throw error;
+		}
+	};
+
+	const handleDeleteReviewComment = async (reviewId, commentId) => {
+		try {
+			await reviewAPI.deleteComment(reviewId, commentId);
+		} catch (error) {
+			console.error("Error deleting review comment:", error);
+			throw error;
 		}
 	};
 
@@ -192,7 +566,6 @@ export default function BusinessProfile() {
 		setShowShareMenu(false);
 	};
 
-	// Helper function to get product image (handles both images array and image_url)
 	const getProductImage = (product) => {
 		if (product.images && product.images.length > 0) {
 			return product.images[0];
@@ -200,7 +573,6 @@ export default function BusinessProfile() {
 		return product.image_url || null;
 	};
 
-	// Group products by category
 	const getGroupedProducts = () => {
 		const grouped = {};
 		products.forEach((product) => {
@@ -211,6 +583,49 @@ export default function BusinessProfile() {
 			grouped[category].push(product);
 		});
 		return grouped;
+	};
+
+	const formatDate = (dateString) => {
+		if (!dateString) return "Just now";
+
+		const date = new Date(dateString);
+		const now = new Date();
+
+		// Reset time part for day calculation
+		const today = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+		);
+		const targetDate = new Date(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate(),
+		);
+
+		const diffTime = today - targetDate;
+		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+		// Calculate time difference in minutes for "just now"
+		const diffMinutes = Math.floor((now - date) / (1000 * 60));
+
+		if (diffMinutes < 1) return "Just now";
+		if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+
+		const diffHours = Math.floor(diffMinutes / 60);
+		if (diffHours < 24)
+			return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+
+		if (diffDays === 0) return "Today";
+		if (diffDays === 1) return "Yesterday";
+		if (diffDays < 7) return `${diffDays} days ago`;
+
+		// For older dates, show actual date
+		return date.toLocaleDateString("en-KE", {
+			day: "numeric",
+			month: "short",
+			year: "numeric",
+		});
 	};
 
 	const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -228,7 +643,6 @@ export default function BusinessProfile() {
 		return (
 			<>
 				<MetaDataInsert title="Invalid business search" />
-
 				<section className="text-center py-20 px-4">
 					<div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
 						<Package size={32} className="text-gray-400" />
@@ -286,7 +700,6 @@ export default function BusinessProfile() {
 					/>
 					<div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-					{/* Back Button */}
 					<Link
 						to="/discover"
 						className="absolute top-4 left-4 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all hover:scale-105"
@@ -295,7 +708,6 @@ export default function BusinessProfile() {
 						<ChevronLeft size={20} className="text-gray-700" />
 					</Link>
 
-					{/* Action Buttons */}
 					<div className="absolute top-4 right-4 flex gap-2">
 						<button
 							onClick={shareBusiness}
@@ -304,7 +716,6 @@ export default function BusinessProfile() {
 						>
 							<Share2 size={20} className="text-gray-700" />
 						</button>
-
 						{user && (
 							<button
 								onClick={toggleFavorite}
@@ -327,7 +738,6 @@ export default function BusinessProfile() {
 						)}
 					</div>
 
-					{/* Business Name */}
 					<div className="absolute bottom-6 left-4 right-4">
 						<h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-lg">
 							{businessName}
@@ -346,14 +756,11 @@ export default function BusinessProfile() {
 					<div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
 						<div className="flex flex-wrap items-start justify-between gap-3">
 							<div className="space-y-2">
-								{/* Category Badge */}
 								{business.category && (
 									<span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full text-white bg-orange-500">
 										{business.category}
 									</span>
 								)}
-
-								{/* Rating */}
 								<div className="flex items-center gap-2">
 									<StarRating
 										rating={averageRating}
@@ -372,8 +779,6 @@ export default function BusinessProfile() {
 										)
 									</span>
 								</div>
-
-								{/* Location */}
 								<div className="flex items-center gap-1.5 text-sm text-gray-600">
 									<MapPin
 										size={14}
@@ -387,8 +792,6 @@ export default function BusinessProfile() {
 											`, ${business.location.floor_unit}`}
 									</span>
 								</div>
-
-								{/* Hours */}
 								<div className="flex items-center gap-1.5 text-sm">
 									<Clock
 										size={14}
@@ -411,8 +814,6 @@ export default function BusinessProfile() {
 									</span>
 								</div>
 							</div>
-
-							{/* Contact Buttons */}
 							<div className="flex gap-2">
 								{business.phone && (
 									<a
@@ -434,8 +835,6 @@ export default function BusinessProfile() {
 								)}
 							</div>
 						</div>
-
-						{/* Delivery Info */}
 						{business.delivery_available && (
 							<div className="mt-3 flex flex-wrap items-center gap-2 bg-blue-50 rounded-xl p-2.5">
 								<ShoppingCart
@@ -485,7 +884,7 @@ export default function BusinessProfile() {
 						))}
 					</div>
 
-					{/* Menu Tab - New Grid Layout */}
+					{/* Menu Tab */}
 					{activeTab === "menu" && (
 						<div className="space-y-8">
 							{!hasProducts ? (
@@ -508,10 +907,8 @@ export default function BusinessProfile() {
 											CATEGORY_CONFIG[category] ||
 											CATEGORY_CONFIG.general;
 										const Icon = config.icon;
-
 										return (
 											<div key={category}>
-												{/* Category Header */}
 												<h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide flex items-center gap-2 mb-4">
 													<Icon
 														size={16}
@@ -520,21 +917,17 @@ export default function BusinessProfile() {
 													{config.label} (
 													{items.length})
 												</h3>
-
-												{/* Grid Layout */}
 												<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 													{items.map((item) => {
 														const imageSrc =
 															getProductImage(
 																item,
 															);
-
 														return (
 															<div
 																key={item._id}
 																className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 group flex flex-col"
 															>
-																{/* Product Image */}
 																<div className="relative h-48 bg-gray-100">
 																	{imageSrc ? (
 																		<img
@@ -556,7 +949,6 @@ export default function BusinessProfile() {
 																			/>
 																		</div>
 																	)}
-
 																	{!item.isAvailable && (
 																		<div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2.5 py-1 rounded-full font-medium">
 																			Out
@@ -565,8 +957,6 @@ export default function BusinessProfile() {
 																		</div>
 																	)}
 																</div>
-
-																{/* Product Info */}
 																<div className="p-4 flex-1 flex flex-col">
 																	<div className="flex-1">
 																		<p className="font-semibold text-gray-900 line-clamp-2 leading-tight mb-1">
@@ -574,7 +964,6 @@ export default function BusinessProfile() {
 																				item.name
 																			}
 																		</p>
-
 																		{item.description && (
 																			<p className="text-xs text-gray-500 line-clamp-2 mb-3">
 																				{
@@ -583,13 +972,11 @@ export default function BusinessProfile() {
 																			</p>
 																		)}
 																	</div>
-
 																	<div className="flex items-center justify-between mt-3">
 																		<p className="font-bold text-orange-600 text-lg">
 																			KES{" "}
 																			{item.price.toLocaleString()}
 																		</p>
-
 																		{item.stock >
 																			0 &&
 																			item.stock <
@@ -604,8 +991,6 @@ export default function BusinessProfile() {
 																			)}
 																	</div>
 																</div>
-
-																{/* Add to Cart Button */}
 																<div className="px-4 pb-4">
 																	<button
 																		onClick={() =>
@@ -663,7 +1048,7 @@ export default function BusinessProfile() {
 						</div>
 					)}
 
-					{/* Reviews Tab */}
+					{/* Reviews Tab with Enhanced Interactions */}
 					{activeTab === "reviews" && (
 						<div className="space-y-4">
 							{/* Review Form */}
@@ -714,7 +1099,7 @@ export default function BusinessProfile() {
 								</div>
 							)}
 
-							{/* Reviews List */}
+							{/* Reviews List with Reactions and Comments */}
 							{reviews.length === 0 ? (
 								<div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
 									<Star
@@ -731,52 +1116,20 @@ export default function BusinessProfile() {
 							) : (
 								<div className="space-y-3">
 									{reviews.map((review) => (
-										<div
+										<ReviewCard
 											key={review._id}
-											className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
-										>
-											<div className="flex items-start gap-3">
-												<div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shrink-0">
-													<span className="text-white font-bold text-sm">
-														{review.userId?.fullName?.[0]?.toUpperCase() ||
-															"U"}
-													</span>
-												</div>
-												<div className="flex-1">
-													<div className="flex flex-wrap items-center justify-between gap-2">
-														<p className="font-semibold text-gray-900 text-sm">
-															{review.userId
-																?.fullName ||
-																"User"}
-														</p>
-														<span className="text-xs text-gray-400">
-															{review.createdAt
-																? new Date(
-																		review.createdAt,
-																	).toLocaleDateString(
-																		"en-KE",
-																		{
-																			day: "numeric",
-																			month: "short",
-																			year: "numeric",
-																		},
-																	)
-																: "Recently"}
-														</span>
-													</div>
-													<StarRating
-														rating={review.rating}
-														size={14}
-														className="mt-1"
-													/>
-													{review.comment && (
-														<p className="text-gray-700 text-sm mt-2 leading-relaxed">
-															{review.comment}
-														</p>
-													)}
-												</div>
-											</div>
-										</div>
+											review={review}
+											user={user}
+											onLike={handleReviewLike}
+											onDislike={handleReviewDislike}
+											onAddComment={
+												handleAddReviewComment
+											}
+											onDeleteComment={
+												handleDeleteReviewComment
+											}
+											formatDate={formatDate}
+										/>
 									))}
 								</div>
 							)}
@@ -786,7 +1139,6 @@ export default function BusinessProfile() {
 					{/* Info Tab */}
 					{activeTab === "info" && (
 						<div className="space-y-4">
-							{/* About */}
 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
 								<h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
 									<Package
@@ -801,7 +1153,6 @@ export default function BusinessProfile() {
 								</p>
 							</div>
 
-							{/* Location Map - ADD THIS */}
 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
 								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
 									<MapPin
@@ -816,7 +1167,6 @@ export default function BusinessProfile() {
 								/>
 							</div>
 
-							{/* Contact & Location */}
 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
 								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
 									<MapPin
@@ -884,7 +1234,6 @@ export default function BusinessProfile() {
 								</div>
 							</div>
 
-							{/* Opening Hours */}
 							<div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
 								<h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
 									<Clock
@@ -899,15 +1248,10 @@ export default function BusinessProfile() {
 										const isOpenDay =
 											business.open_days?.includes(day) ||
 											false;
-
 										return (
 											<div
 												key={day}
-												className={`flex items-center justify-between py-2 px-2 rounded-lg text-sm ${
-													isToday
-														? "bg-orange-50"
-														: ""
-												}`}
+												className={`flex items-center justify-between py-2 px-2 rounded-lg text-sm ${isToday ? "bg-orange-50" : ""}`}
 											>
 												<span
 													className={`font-medium ${isToday ? "text-orange-600" : "text-gray-700"}`}

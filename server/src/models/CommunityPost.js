@@ -31,24 +31,34 @@ const communityPostSchema = new mongoose.Schema(
 			type: String,
 			default: null,
 		},
-		likes: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "User",
-			},
-		],
+		likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+		dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 		comments: [
 			{
 				userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-				content: String,
+				content: { type: String, required: true, maxlength: 500 },
 				createdAt: { type: Date, default: Date.now },
 			},
 		],
+		commentsCount: { type: Number, default: 0 },
 	},
 	{
 		timestamps: true,
 	},
 );
+
+// Virtual for like count
+communityPostSchema.virtual("likesCount").get(function () {
+	return this.likes?.length || 0;
+});
+
+// Virtual for dislike count
+communityPostSchema.virtual("dislikesCount").get(function () {
+	return this.dislikes?.length || 0;
+});
+
+communityPostSchema.set("toJSON", { virtuals: true });
+communityPostSchema.set("toObject", { virtuals: true });
 
 // FIXED: For Mongoose 6+, don't use next() with async/await
 // Use regular function and no next parameter

@@ -63,9 +63,141 @@ export const createReview = async (req, res) => {
 			comment,
 		});
 
+		const business = await Business.findById(businessId);
+		if (business) {
+			await business.updateRating(rating);
+		}
+
 		await review.populate("userId", "fullName email profileImage");
 
 		res.status(201).json(review);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Toggle like on review
+export const toggleReviewLike = async (req, res) => {
+	try {
+		const review = await Review.findById(req.params.id);
+		if (!review)
+			return res.status(404).json({ message: "Review not found" });
+
+		const userId = req.user._id;
+		const likedIndex = review.likes.indexOf(userId);
+		const dislikedIndex = review.dislikes.indexOf(userId);
+
+		let action = "added";
+
+		if (likedIndex !== -1) {
+			review.likes.splice(likedIndex, 1);
+			action = "removed";
+		} else {
+			if (dislikedIndex !== -1) review.dislikes.splice(dislikedIndex, 1);
+			review.likes.push(userId);
+			action = "added";
+		}
+
+		await review.save();
+		res.json({
+			action,
+			likesCount: review.likes.length,
+			dislikesCount: review.dislikes.length,
+			userReaction: action === "added" ? "like" : null,
+		});
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Toggle dislike on review
+export const toggleReviewDislike = async (req, res) => {
+	try {
+		const review = await Review.findById(req.params.id);
+		if (!review)
+			return res.status(404).json({ message: "Review not found" });
+
+		const userId = req.user._id;
+		const dislikedIndex = review.dislikes.indexOf(userId);
+		const likedIndex = review.likes.indexOf(userId);
+
+		let action = "added";
+
+		if (dislikedIndex !== -1) {
+			review.dislikes.splice(dislikedIndex, 1);
+			action = "removed";
+		} else {
+			if (likedIndex !== -1) review.likes.splice(likedIndex, 1);
+			review.dislikes.push(userId);
+			action = "added";
+		}
+
+		await review.save();
+		res.json({
+			action,
+			likesCount: review.likes.length,
+			dislikesCount: review.dislikes.length,
+			userReaction: action === "added" ? "dislike" : null,
+		});
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Add comment to review
+export const addReviewComment = async (req, res) => {
+	try {
+		const review = await Review.findById(req.params.id);
+		if (!review)
+			return res.status(404).json({ message: "Review not found" });
+
+		const newComment = {
+			userId: req.user._id,
+			content: req.body.content,
+			createdAt: new Date(),
+		};
+
+		review.comments.push(newComment);
+		await review.save();
+
+		const populatedReview = await Review.findById(req.params.id).populate(
+			"comments.userId",
+			"fullName",
+		);
+		const addedComment =
+			populatedReview.comments[populatedReview.comments.length - 1];
+
+		res.status(201).json(addedComment);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+// Delete comment from review
+export const deleteReviewComment = async (req, res) => {
+	try {
+		const review = await Review.findById(req.params.id);
+		if (!review)
+			return res.status(404).json({ message: "Review not found" });
+
+		const commentIndex = review.comments.findIndex(
+			(c) => c._id.toString() === req.params.commentId,
+		);
+		if (commentIndex === -1)
+			return res.status(404).json({ message: "Comment not found" });
+
+		if (
+			review.comments[commentIndex].userId.toString() !==
+				req.user._id.toString() &&
+			req.user.role !== "admin"
+		) {
+			return res.status(403).json({ message: "Not authorized" });
+		}
+
+		review.comments.splice(commentIndex, 1);
+		await review.save();
+
+		res.json({ message: "Comment deleted" });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
